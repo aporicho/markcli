@@ -1,0 +1,41 @@
+{
+  "name": "markcli",
+  "version": "1.0.0",
+  "description": "终端 Markdown 批注工具",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "markcli": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.tsx",
+    "start": "node dist/cli.js"
+  },
+  "keywords": [
+    "markdown",
+    "cli",
+    "annotation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "approx-string-match": "^2.0.0",
+    "chalk": "^5.6.2",
+    "cli-markdown": "^3.5.1",
+    "ink": "^5.2.1",
+    "markdown-it": "^14.1.1",
+    "markdown-it-terminal": "^0.4.0",
+    "markdown-to-ansi": "^1.0.0",
+    "meow": "^14.1.0",
+    "nanoid": "^5.1.6",
+    "react": "^18.3.1",
+    "wrap-ansi": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

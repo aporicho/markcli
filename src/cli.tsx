@@ -15,7 +15,6 @@ const version = fs.existsSync(pkgPath)
 	? JSON.parse(fs.readFileSync(pkgPath, "utf-8")).version
 	: "unknown";
 
-
 const cli = meow(
 	`
   用法
@@ -30,6 +29,7 @@ const cli = meow(
     clear <文件>   清除所有批注
     mcp            启动 MCP server（供 Claude Code 调用）
     update         检查并更新到最新版本
+    doctor         检查环境配置是否正常
 
   选项
     --version, -V  显示版本号
@@ -64,9 +64,7 @@ if (cli.flags.completions !== undefined) {
 	if (fs.existsSync(file)) {
 		console.log(fs.readFileSync(file, "utf-8"));
 	} else {
-		console.error(
-			`不支持的 shell: ${shell}（支持 zsh, bash, fish）`,
-		);
+		console.error(`不支持的 shell: ${shell}（支持 zsh, bash, fish）`);
 		process.exit(1);
 	}
 	process.exit(0);
@@ -110,6 +108,79 @@ if (!command) {
 		command = "open";
 		filePath = mdFiles[idx];
 	}
+}
+
+// `mark doctor` 检查环境配置
+if (command === "doctor") {
+	const { execSync } = await import("node:child_process");
+	let ok = true;
+
+	// 版本
+	console.log(`mark ${version}`);
+	console.log();
+
+	// PATH
+	const binPath = process.execPath;
+	const binDir = path.dirname(binPath);
+	const inPath = process.env.PATH?.split(":").includes(binDir);
+	console.log(
+		`${inPath ? "✅" : "❌"} PATH: ${binDir} ${inPath ? "已在 PATH 中" : "不在 PATH 中"}`,
+	);
+	if (!inPath) ok = false;
+
+	// Claude Code
+	let hasClaude = false;
+	try {
+		execSync("which claude", { stdio: "pipe" });
+		hasClaude = true;
+	} catch {}
+	console.log(
+		`${hasClaude ? "✅" : "⚠️"} Claude Code: ${hasClaude ? "已安装" : "未安装"}`,
+	);
+
+	// MCP 配置
+	if (hasClaude) {
+		const homeDir = (await import("node:os")).homedir();
+		const claudeConfig = path.join(homeDir, ".claude.json");
+		let mcpOk = false;
+		try {
+			const config = JSON.parse(fs.readFileSync(claudeConfig, "utf-8"));
+			const mcpServers =
+				config?.projects?.mcpServers ?? config?.mcpServers ?? {};
+			// 遍历所有项目配置查找 mark
+			const allServers = { ...mcpServers };
+			if (config?.projects) {
+				for (const proj of Object.values(config.projects) as Record<
+					string,
+					unknown
+				>[]) {
+					if (proj?.mcpServers) Object.assign(allServers, proj.mcpServers);
+				}
+			}
+			mcpOk = "mark" in allServers;
+		} catch {}
+		console.log(
+			`${mcpOk ? "✅" : "❌"} MCP 集成: ${mcpOk ? "已配置" : "未配置（运行 claude mcp add mark -- mark mcp）"}`,
+		);
+		if (!mcpOk) ok = false;
+	}
+
+	// macOS 签名
+	if (process.platform === "darwin") {
+		let signOk = false;
+		try {
+			execSync(`codesign -v "${binPath}" 2>&1`, { stdio: "pipe" });
+			signOk = true;
+		} catch {}
+		console.log(
+			`${signOk ? "✅" : "❌"} 代码签名: ${signOk ? "有效" : `无效（运行 codesign --force --sign - ${binPath}）`}`,
+		);
+		if (!signOk) ok = false;
+	}
+
+	console.log();
+	console.log(ok ? "一切正常 👍" : "存在问题，请按提示修复");
+	process.exit(ok ? 0 : 1);
 }
 
 // `mark mcp` 启动 MCP server（供 Claude Code 调用）

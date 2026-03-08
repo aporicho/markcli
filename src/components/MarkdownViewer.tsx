@@ -51,7 +51,10 @@ export function MarkdownViewer({
 	extraScrollPadding = 0,
 }: MarkdownViewerProps) {
 	const [scrollOffset, setScrollOffset] = useState(0);
-	const maxOffset = Math.max(0, lines.length - viewportHeight + extraScrollPadding);
+	const maxOffset = Math.max(
+		0,
+		lines.length - viewportHeight + extraScrollPadding,
+	);
 
 	// resize 时修正 scrollOffset
 	const prevLinesLenRef = useRef(lines.length);
@@ -60,13 +63,13 @@ export function MarkdownViewer({
 			prevLinesLenRef.current = lines.length;
 			setScrollOffset((prev) => Math.min(prev, maxOffset));
 		}
-	}, [lines.length, viewportHeight, maxOffset]);
+	}, [lines.length, maxOffset]);
 
 	// ---- 外部滚动控制 ----
 	useEffect(() => {
 		if (scrollToOffset == null) return;
 		setScrollOffset(Math.max(0, Math.min(scrollToOffset.offset, maxOffset)));
-	}, [scrollToOffset?.offset, scrollToOffset?.rev, maxOffset]);
+	}, [scrollToOffset, maxOffset]);
 
 	// ---- 滚动 ----
 	const scrollUp = useCallback(

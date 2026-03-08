@@ -1,9 +1,6 @@
 import { Box, useInput, useStdin } from "ink";
 import { useEffect, useRef, useState } from "react";
-import {
-	disableMouseTracking,
-	enableMouseTracking,
-} from "../utils/mouse.js";
+import { disableMouseTracking, enableMouseTracking } from "../utils/mouse.js";
 import { TextInput } from "./TextInput.js";
 
 interface AnnotationInputProps {
@@ -33,7 +30,11 @@ export function AnnotationInput({
 	const [ready, setReady] = useState(false);
 
 	const stdinContext = useStdin();
-	const emitter = (stdinContext as any).internal_eventEmitter;
+	const emitter = (
+		stdinContext as unknown as {
+			internal_eventEmitter: import("node:events").EventEmitter;
+		}
+	).internal_eventEmitter;
 	const onCancelRef = useRef(onCancel);
 	onCancelRef.current = onCancel;
 

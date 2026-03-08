@@ -53,7 +53,11 @@ export function useMouse({
 	onEvent,
 }: UseMouseOptions) {
 	const stdinContext = useStdin();
-	const emitter = (stdinContext as any).internal_eventEmitter;
+	const emitter = (
+		stdinContext as unknown as {
+			internal_eventEmitter: import("node:events").EventEmitter;
+		}
+	).internal_eventEmitter;
 
 	const stateRef = useRef({ scrollOffset, active, lines, onEvent });
 	stateRef.current = { scrollOffset, active, lines, onEvent };

@@ -46,7 +46,7 @@ export function createMcpServer(): McpServer {
 						}
 						let md = `## Annotations for ${data.file}\n\n`;
 						for (const ann of data.annotations) {
-							md += `> "${ann.selectedText}"\n\n`;
+							md += `**[${ann.id}]** > "${ann.selectedText}"\n\n`;
 							md += `批注: ${ann.comment}\n\n---\n\n`;
 						}
 						return { content: [{ type: "text", text: md.trim() }] };
@@ -128,16 +128,12 @@ export function createMcpServer(): McpServer {
 					return { content: [{ type: "text", text }] };
 				}
 				return {
-					content: [
-						{ type: "text", text: "Unexpected response from Mark" },
-					],
+					content: [{ type: "text", text: "Unexpected response from Mark" }],
 					isError: true,
 				};
 			} catch {
 				return {
-					content: [
-						{ type: "text", text: "Failed to connect to Mark" },
-					],
+					content: [{ type: "text", text: "Failed to connect to Mark" }],
 					isError: true,
 				};
 			}
@@ -182,16 +178,178 @@ export function createMcpServer(): McpServer {
 					};
 				}
 				return {
+					content: [{ type: "text", text: "Unexpected response from Mark" }],
+					isError: true,
+				};
+			} catch {
+				return {
+					content: [{ type: "text", text: "Failed to connect to Mark" }],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// add_annotation: 添加批注
+	server.tool(
+		"add_annotation",
+		"在 Mark 中添加批注。必须指定选中的文本、批注内容和行号范围。Mark 必须已经在运行。",
+		{
+			file: z
+				.string()
+				.optional()
+				.describe("文件路径（可选，默认为当前打开的文件）"),
+			selectedText: z.string().describe("选中的原文"),
+			comment: z.string().describe("批注内容"),
+			startLine: z.number().describe("起始行号"),
+			endLine: z.number().describe("结束行号"),
+			startCol: z.number().optional().describe("起始列号（可选）"),
+			endCol: z.number().optional().describe("结束列号（可选）"),
+		},
+		async ({
+			file,
+			selectedText,
+			comment,
+			startLine,
+			endLine,
+			startCol,
+			endCol,
+		}) => {
+			const connected = await ipc.isConnected();
+			if (!connected) {
+				return {
 					content: [
-						{ type: "text", text: "Unexpected response from Mark" },
+						{
+							type: "text",
+							text: "Mark is not running. Please start Mark with `mark <file>` first.",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const res = await ipc.send({
+					type: "add_annotation",
+					file,
+					selectedText,
+					comment,
+					startLine,
+					endLine,
+					startCol,
+					endCol,
+				});
+				if (res.type === "ok") {
+					return { content: [{ type: "text", text: res.message }] };
+				}
+				return {
+					content: [
+						{
+							type: "text",
+							text: res.type === "error" ? res.message : "Unexpected response",
+						},
 					],
 					isError: true,
 				};
 			} catch {
 				return {
+					content: [{ type: "text", text: "Failed to connect to Mark" }],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// update_annotation: 更新批注内容
+	server.tool(
+		"update_annotation",
+		"更新 Mark 中已有批注的内容。需要提供批注 ID 和新的批注内容。Mark 必须已经在运行。",
+		{
+			id: z.string().describe("批注 ID"),
+			comment: z.string().describe("新的批注内容"),
+		},
+		async ({ id, comment }) => {
+			const connected = await ipc.isConnected();
+			if (!connected) {
+				return {
 					content: [
-						{ type: "text", text: "Failed to connect to Mark" },
+						{
+							type: "text",
+							text: "Mark is not running. Please start Mark with `mark <file>` first.",
+						},
 					],
+					isError: true,
+				};
+			}
+
+			try {
+				const res = await ipc.send({
+					type: "update_annotation",
+					id,
+					comment,
+				});
+				if (res.type === "ok") {
+					return { content: [{ type: "text", text: res.message }] };
+				}
+				return {
+					content: [
+						{
+							type: "text",
+							text: res.type === "error" ? res.message : "Unexpected response",
+						},
+					],
+					isError: true,
+				};
+			} catch {
+				return {
+					content: [{ type: "text", text: "Failed to connect to Mark" }],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// remove_annotation: 删除批注
+	server.tool(
+		"remove_annotation",
+		"删除 Mark 中的一条批注。需要提供批注 ID。Mark 必须已经在运行。",
+		{
+			id: z.string().describe("批注 ID"),
+		},
+		async ({ id }) => {
+			const connected = await ipc.isConnected();
+			if (!connected) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Mark is not running. Please start Mark with `mark <file>` first.",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const res = await ipc.send({
+					type: "remove_annotation",
+					id,
+				});
+				if (res.type === "ok") {
+					return { content: [{ type: "text", text: res.message }] };
+				}
+				return {
+					content: [
+						{
+							type: "text",
+							text: res.type === "error" ? res.message : "Unexpected response",
+						},
+					],
+					isError: true,
+				};
+			} catch {
+				return {
+					content: [{ type: "text", text: "Failed to connect to Mark" }],
 					isError: true,
 				};
 			}

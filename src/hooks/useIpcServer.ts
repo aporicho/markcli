@@ -1,28 +1,41 @@
 import { useEffect, useRef } from "react";
 import { IpcServer, type TuiState } from "../mcp/ipc-server.js";
 
+interface IpcHandlers {
+	onOpenFile: (filePath: string) => void;
+	onAddAnnotation: (params: {
+		selectedText: string;
+		comment: string;
+		startLine: number;
+		endLine: number;
+		startCol?: number;
+		endCol?: number;
+	}) => void;
+	onUpdateAnnotation: (id: string, comment: string) => void;
+	onRemoveAnnotation: (id: string) => void;
+}
+
 /**
  * React hook：TUI 启动时创建 IPC socket server，暴露状态给 MCP。
  * 通过 useRef 保持对最新 state 的引用。
  */
-export function useIpcServer(
-	state: TuiState,
-	onOpenFile: (filePath: string) => void,
-): void {
+export function useIpcServer(state: TuiState, handlers: IpcHandlers): void {
 	const serverRef = useRef<IpcServer | null>(null);
 
-	// 初始化 server（仅一次）
+	// 初始化 server（仅挂载时启动一次，状态和 handler 通过后续 effect 同步）
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally run once on mount
 	useEffect(() => {
 		const server = new IpcServer(state);
-		server.setOpenFileHandler(onOpenFile);
+		server.setOpenFileHandler(handlers.onOpenFile);
+		server.setAddAnnotationHandler(handlers.onAddAnnotation);
+		server.setUpdateAnnotationHandler(handlers.onUpdateAnnotation);
+		server.setRemoveAnnotationHandler(handlers.onRemoveAnnotation);
 		server.start();
 		serverRef.current = server;
 		return () => {
 			server.stop();
 			serverRef.current = null;
 		};
-		// 仅在挂载时启动
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// 同步最新状态到 server
@@ -30,8 +43,16 @@ export function useIpcServer(
 		serverRef.current?.updateState(state);
 	}, [state]);
 
-	// 同步 onOpenFile handler
+	// 同步 handlers
 	useEffect(() => {
-		serverRef.current?.setOpenFileHandler(onOpenFile);
-	}, [onOpenFile]);
+		serverRef.current?.setOpenFileHandler(handlers.onOpenFile);
+		serverRef.current?.setAddAnnotationHandler(handlers.onAddAnnotation);
+		serverRef.current?.setUpdateAnnotationHandler(handlers.onUpdateAnnotation);
+		serverRef.current?.setRemoveAnnotationHandler(handlers.onRemoveAnnotation);
+	}, [
+		handlers.onOpenFile,
+		handlers.onAddAnnotation,
+		handlers.onUpdateAnnotation,
+		handlers.onRemoveAnnotation,
+	]);
 }

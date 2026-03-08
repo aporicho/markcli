@@ -15,10 +15,35 @@ export interface OpenFileRequest {
 	path: string;
 }
 
+export interface AddAnnotationRequest {
+	type: "add_annotation";
+	file?: string;
+	selectedText: string;
+	comment: string;
+	startLine: number;
+	endLine: number;
+	startCol?: number;
+	endCol?: number;
+}
+
+export interface UpdateAnnotationRequest {
+	type: "update_annotation";
+	id: string;
+	comment: string;
+}
+
+export interface RemoveAnnotationRequest {
+	type: "remove_annotation";
+	id: string;
+}
+
 export type IpcRequest =
 	| GetAnnotationsRequest
 	| GetStatusRequest
-	| OpenFileRequest;
+	| OpenFileRequest
+	| AddAnnotationRequest
+	| UpdateAnnotationRequest
+	| RemoveAnnotationRequest;
 
 // TUI → MCP 响应
 export interface AnnotationsResponse {
@@ -26,6 +51,7 @@ export interface AnnotationsResponse {
 	data: {
 		file: string;
 		annotations: Array<{
+			id: string;
 			selectedText: string;
 			comment: string;
 			startLine: number;

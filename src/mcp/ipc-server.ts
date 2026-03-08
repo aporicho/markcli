@@ -13,11 +13,24 @@ export interface TuiState {
 }
 
 type OpenFileHandler = (filePath: string) => void;
+type AddAnnotationHandler = (params: {
+	selectedText: string;
+	comment: string;
+	startLine: number;
+	endLine: number;
+	startCol?: number;
+	endCol?: number;
+}) => void;
+type UpdateAnnotationHandler = (id: string, comment: string) => void;
+type RemoveAnnotationHandler = (id: string) => void;
 
 export class IpcServer {
 	private server: net.Server | null = null;
 	private state: TuiState;
 	private onOpenFile: OpenFileHandler | null = null;
+	private onAddAnnotation: AddAnnotationHandler | null = null;
+	private onUpdateAnnotation: UpdateAnnotationHandler | null = null;
+	private onRemoveAnnotation: RemoveAnnotationHandler | null = null;
 
 	constructor(initialState: TuiState) {
 		this.state = initialState;
@@ -29,6 +42,18 @@ export class IpcServer {
 
 	setOpenFileHandler(handler: OpenFileHandler): void {
 		this.onOpenFile = handler;
+	}
+
+	setAddAnnotationHandler(handler: AddAnnotationHandler): void {
+		this.onAddAnnotation = handler;
+	}
+
+	setUpdateAnnotationHandler(handler: UpdateAnnotationHandler): void {
+		this.onUpdateAnnotation = handler;
+	}
+
+	setRemoveAnnotationHandler(handler: RemoveAnnotationHandler): void {
+		this.onRemoveAnnotation = handler;
 	}
 
 	start(): void {
@@ -76,6 +101,7 @@ export class IpcServer {
 					data: {
 						file: this.state.filePath,
 						annotations: this.state.annotations.map((a) => ({
+							id: a.id,
 							selectedText: a.selectedText,
 							comment: a.comment,
 							startLine: a.startLine,
@@ -100,6 +126,34 @@ export class IpcServer {
 					return { type: "ok", message: `Opened ${req.path}` };
 				}
 				return { type: "error", message: "open_file handler not set" };
+			}
+			case "add_annotation": {
+				if (this.onAddAnnotation) {
+					this.onAddAnnotation({
+						selectedText: req.selectedText,
+						comment: req.comment,
+						startLine: req.startLine,
+						endLine: req.endLine,
+						startCol: req.startCol,
+						endCol: req.endCol,
+					});
+					return { type: "ok", message: "Annotation added" };
+				}
+				return { type: "error", message: "add_annotation handler not set" };
+			}
+			case "update_annotation": {
+				if (this.onUpdateAnnotation) {
+					this.onUpdateAnnotation(req.id, req.comment);
+					return { type: "ok", message: `Annotation ${req.id} updated` };
+				}
+				return { type: "error", message: "update_annotation handler not set" };
+			}
+			case "remove_annotation": {
+				if (this.onRemoveAnnotation) {
+					this.onRemoveAnnotation(req.id);
+					return { type: "ok", message: `Annotation ${req.id} removed` };
+				}
+				return { type: "error", message: "remove_annotation handler not set" };
 			}
 		}
 	}

@@ -44,12 +44,13 @@ export function OverviewPanel({
 		onHighlightChange(annotations[idx]!);
 	}, [annotations, cursorIndex, onHighlightChange, onCancel]);
 
-	// 初始高亮
+	// 初始高亮（仅挂载时执行一次）
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally run once on mount
 	useEffect(() => {
 		if (annotations.length > 0) {
 			onHighlightChange(annotations[0]!);
 		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	}, []);
 
 	useInput((input, key) => {
 		if (key.escape) {
@@ -95,10 +96,16 @@ export function OverviewPanel({
 	if (annotations.length > innerMaxHeight) {
 		scrollStart = Math.max(
 			0,
-			Math.min(cursorIndex - Math.floor(innerMaxHeight / 2), annotations.length - innerMaxHeight),
+			Math.min(
+				cursorIndex - Math.floor(innerMaxHeight / 2),
+				annotations.length - innerMaxHeight,
+			),
 		);
 	}
-	const visibleAnnotations = annotations.slice(scrollStart, scrollStart + innerMaxHeight);
+	const visibleAnnotations = annotations.slice(
+		scrollStart,
+		scrollStart + innerMaxHeight,
+	);
 
 	return (
 		<Box
@@ -133,13 +140,14 @@ export function OverviewPanel({
 							: ann.comment;
 					const prefix = isCurrent ? "▸" : " ";
 					return (
-						<Text
-							key={ann.id}
-							inverse={isCurrent}
-						>
+						<Text key={ann.id} inverse={isCurrent}>
 							{prefix}{" "}
-							<Text color={isCurrent ? undefined : "cyan"}>{range.padEnd(9)}</Text>
-							<Text dimColor={!isCurrent}>"{textPreview.replace(/\n/g, "↵")}"</Text>
+							<Text color={isCurrent ? undefined : "cyan"}>
+								{range.padEnd(9)}
+							</Text>
+							<Text dimColor={!isCurrent}>
+								"{textPreview.replace(/\n/g, "↵")}"
+							</Text>
 							<Text> → {commentPreview}</Text>
 						</Text>
 					);

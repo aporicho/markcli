@@ -3,12 +3,12 @@ import path from "node:path";
 import { Box, useApp, useStdout } from "ink";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnotationInput } from "./components/AnnotationInput.js";
-import { OverviewPanel } from "./components/OverviewPanel.js";
 import { getSelectedText } from "./components/LineSelector.js";
 import {
 	MarkdownViewer,
 	type ViewerStatus,
 } from "./components/MarkdownViewer.js";
+import { OverviewPanel } from "./components/OverviewPanel.js";
 import { StatusBar } from "./components/StatusBar.js";
 import { useAnnotations } from "./hooks/useAnnotations.js";
 import { useFileWatcher } from "./hooks/useFileWatcher.js";
@@ -29,7 +29,10 @@ interface AppProps {
 	content: string;
 }
 
-export function App({ filePath: initialFilePath, content: initialContent }: AppProps) {
+export function App({
+	filePath: initialFilePath,
+	content: initialContent,
+}: AppProps) {
 	const [currentFilePath, setCurrentFilePath] = useState(initialFilePath);
 	const [currentContent, setCurrentContent] = useState(initialContent);
 	const { exit } = useApp();
@@ -92,7 +95,12 @@ export function App({ filePath: initialFilePath, content: initialContent }: AppP
 		}),
 		[currentFilePath, mode, annotations],
 	);
-	useIpcServer(ipcState, handleOpenFile);
+	useIpcServer(ipcState, {
+		onOpenFile: handleOpenFile,
+		onAddAnnotation: addAnnotation,
+		onUpdateAnnotation: updateAnnotation,
+		onRemoveAnnotation: removeAnnotation,
+	});
 
 	const [overviewScrollTarget, setOverviewScrollTarget] = useState<{
 		offset: number;
@@ -294,8 +302,14 @@ export function App({ filePath: initialFilePath, content: initialContent }: AppP
 	}, []);
 
 	// 总览面板高度为视口 40%，垂直居中
-	const overviewPanelHeight = Math.min(Math.max(5, Math.round(viewportHeight * 0.4)), viewportHeight - 2);
-	const overviewFloatTop = Math.max(0, Math.floor((viewportHeight - overviewPanelHeight) / 2));
+	const overviewPanelHeight = Math.min(
+		Math.max(5, Math.round(viewportHeight * 0.4)),
+		viewportHeight - 2,
+	);
+	const overviewFloatTop = Math.max(
+		0,
+		Math.floor((viewportHeight - overviewPanelHeight) / 2),
+	);
 
 	// 总览模式
 	const handleEnterOverview = useCallback(() => {
@@ -327,7 +341,10 @@ export function App({ filePath: initialFilePath, content: initialContent }: AppP
 		(ann: Annotation | null) => {
 			if (ann) {
 				overviewRevRef.current += 1;
-				const offset = Math.max(0, ann.endLine - 1 - Math.max(0, overviewFloatTop - 1));
+				const offset = Math.max(
+					0,
+					ann.endLine - 1 - Math.max(0, overviewFloatTop - 1),
+				);
 				setOverviewScrollTarget({ offset, rev: overviewRevRef.current });
 			}
 		},
@@ -390,7 +407,6 @@ export function App({ filePath: initialFilePath, content: initialContent }: AppP
 		return Math.max(0, selStartInViewport - 5);
 	}, [pendingSelection, viewerStatus.scrollOffset, viewportHeight]);
 
-
 	return (
 		<Box flexDirection="column" height={stdout?.rows ?? 24}>
 			<Box height={viewportHeight}>
@@ -405,7 +421,9 @@ export function App({ filePath: initialFilePath, content: initialContent }: AppP
 					onOverviewMode={handleEnterOverview}
 					onEditAnnotation={handleEditAnnotation}
 					scrollToOffset={overviewScrollTarget}
-				extraScrollPadding={mode === "overview" ? viewportHeight - overviewFloatTop : 0}
+					extraScrollPadding={
+						mode === "overview" ? viewportHeight - overviewFloatTop : 0
+					}
 				/>
 				{mode === "annotating" && pendingSelection && (
 					<AnnotationInput

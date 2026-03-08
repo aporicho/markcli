@@ -169,7 +169,7 @@ function DebugStatusBar() {
 const cli = meow(
 	`
   用法
-    $ markcli debug <组件名> [文件]
+    $ mark debug <组件名> [文件]
 
   组件名
     textinput       TextInput 文字输入组件
@@ -178,10 +178,10 @@ const cli = meow(
     statusbar       StatusBar 状态栏
 
   示例
-    $ markcli debug textinput
-    $ markcli debug viewer test.md
-    $ markcli debug annotation
-    $ markcli debug statusbar
+    $ mark debug textinput
+    $ mark debug viewer test.md
+    $ mark debug annotation
+    $ mark debug statusbar
 `,
 	{
 		importMeta: import.meta,

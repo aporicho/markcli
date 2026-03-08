@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { AnnotationFile } from "../types.js";
 
-function getAnnotationPath(filePath: string): string {
+export function getAnnotationPath(filePath: string): string {
 	const dir = path.dirname(filePath);
 	const base = path.basename(filePath);
 	return path.join(dir, `${base}.markcli.json`);

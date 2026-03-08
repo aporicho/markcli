@@ -13,6 +13,8 @@
 - **字符级精度** — 正确处理 ANSI 转义序列和双宽字符（中日韩文字），预换行确保长行渲染一致
 - **文本锚定** — 采用 W3C Web Annotation 标准，文件修改后批注自动重定位
 - **JSON 持久化** — 批注保存在 `.markcli.json` 文件中，可版本控制
+- **MCP 集成** — 内置 MCP server，Claude Code 可实时读取批注、查询状态、控制打开文件
+- **自动刷新** — Claude 编辑文件后，Mark 自动检测变化并刷新内容
 
 ## 安装
 
@@ -28,19 +30,19 @@ curl -fsSL https://raw.githubusercontent.com/aporicho/markcli/main/install.sh | 
 
 ```bash
 # 直接打开文件
-markcli README.md
+mark README.md
 
 # 也可以显式指定命令
-markcli open README.md
+mark open README.md
 
 # 查看文件的所有批注（JSON）
-markcli list README.md
+mark list README.md
 
 # 输出格式化的批注摘要
-markcli show README.md
+mark show README.md
 
 # 清除所有批注
-markcli clear README.md
+mark clear README.md
 ```
 
 ### 从源码运行
@@ -94,6 +96,33 @@ npm run dev -- open README.md
 | `⌫` / `d` | 删除选中批注 |
 | `Esc` | 返回阅读模式 |
 
+## Claude Code 集成（MCP）
+
+Mark 内置 MCP server，让 Claude Code 实时读取你的批注。
+
+### 配置
+
+```bash
+claude mcp add mark -- mark-mcp
+```
+
+配置完成后，Claude Code 会自动在后台启动 `mark-mcp` 进程。
+
+### 使用
+
+1. 在终端运行 `mark README.md` 打开文件
+2. 划线、写批注
+3. Claude Code 中 Claude 自动读取批注，据此修改代码
+4. Claude 修改文件后，Mark 自动刷新显示最新内容
+
+### MCP Tools
+
+| Tool | 功能 |
+|------|------|
+| `get_annotations` | 读取当前批注（支持指定文件） |
+| `get_file_status` | 查询 Mark 运行状态 |
+| `open_file` | 让 Mark 打开指定文件 |
+
 ## 文本锚定
 
 传统批注工具以行号定位，文件编辑后批注就会错位。MarkCLI 采用 W3C Web Annotation 文本锚定方案：
@@ -113,6 +142,7 @@ npm run dev -- open README.md
 ```
 src/
 ├── cli.tsx                 # CLI 入口，命令解析
+├── mcp-cli.ts              # MCP server 入口（独立进程）
 ├── app.tsx                 # 主应用，状态与模式管理
 ├── debug.tsx               # 单组件调试入口
 ├── types.ts                # 类型定义
@@ -125,9 +155,17 @@ src/
 │   └── TextInput.tsx       # 文字输入组件
 ├── hooks/
 │   ├── useAnnotations.ts   # 批注 CRUD + 持久化
+│   ├── useFileWatcher.ts   # 文件变化监听（自动刷新）
+│   ├── useIpcServer.ts     # IPC socket server（暴露状态给 MCP）
 │   ├── useKeyboard.ts      # 键盘事件处理
 │   ├── useSelection.ts     # 选择状态管理
 │   └── useMouse.ts         # 终端鼠标追踪 (SGR 协议)
+├── mcp/
+│   ├── protocol.ts         # IPC 消息类型定义
+│   ├── socket-path.ts      # Unix socket 路径计算
+│   ├── ipc-server.ts       # TUI 侧 socket server
+│   ├── ipc-client.ts       # MCP 侧 socket client
+│   └── server.ts           # MCP server（注册 tools）
 └── utils/
     ├── storage.ts          # 文件存储 (.markcli.json)
     ├── textAnchor.ts       # 文本锚定与重定位
@@ -146,6 +184,7 @@ src/
 | [wrap-ansi](https://github.com/chalk/wrap-ansi) | ANSI 感知的文本换行 |
 | [approx-string-match](https://github.com/nickstenning/approx-string-match) | 模糊文本匹配 |
 | [meow](https://github.com/sindresorhus/meow) | CLI 参数解析 |
+| [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk) | MCP server 实现 |
 
 ## License
 

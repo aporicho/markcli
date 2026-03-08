@@ -36,7 +36,7 @@ class MarkdownReader {
 
 ## 使用说明
 
-使用 `markcli open test.md` 打开此文件进行阅读。
+使用 `mark open test.md` 打开此文件进行阅读。
 
 - 使用 **↑↓** 键或鼠标滚轮滚动内容
 - 按 **v** 进入选中模式，用方向键调整范围

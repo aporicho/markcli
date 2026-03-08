@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="aporicho/markcli"
-BINARY_NAME="markcli"
+BINARY_NAME="mark"
 
 # 检测 OS
 case "$(uname -s)" in
@@ -24,7 +24,7 @@ case "$(uname -m)" in
     ;;
 esac
 
-ASSET="${BINARY_NAME}-${OS}-${ARCH}"
+ASSET="mark-${OS}-${ARCH}"
 echo "📦 MarkCLI 安装/更新程序"
 echo "   系统: ${OS}-${ARCH}"
 
@@ -39,7 +39,7 @@ echo "   版本: ${LATEST}"
 
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST}/${ASSET}"
 
-# 选择安装目录
+# ���择安装目录
 if [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
   INSTALL_DIR="$HOME/.local/bin"
 else
@@ -76,3 +76,28 @@ if ! echo "$PATH" | tr ':' '\n' | grep -q "^${INSTALL_DIR}$"; then
   echo "⚠️  ${INSTALL_DIR} 不在 PATH 中，请添加："
   echo "   echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
 fi
+
+# 配置 Claude Code MCP 集成
+echo ""
+if command -v claude &>/dev/null; then
+  echo "🔗 配置 Claude Code MCP 集成..."
+  if claude mcp add mark -- "$INSTALL_PATH" mcp 2>/dev/null; then
+    echo "✅ MCP 已配置，Claude Code 可直接读取批注"
+  else
+    echo "⚠️  MCP 自动配置失败，请手动运行："
+    echo "   claude mcp add mark -- ${INSTALL_PATH} mcp"
+  fi
+else
+  echo "💡 配合 Claude Code 使用（安装 Claude Code 后运行）："
+  echo "   claude mcp add mark -- ${BINARY_NAME} mcp"
+fi
+
+# 提示启用 shell 补全
+echo ""
+echo "💡 启用 Tab 补全，在 shell 配置中添加一行："
+case "${SHELL##*/}" in
+  zsh)  echo "   echo 'eval \"\$(mark --completions zsh)\"' >> ~/.zshrc" ;;
+  bash) echo "   echo 'eval \"\$(mark --completions bash)\"' >> ~/.bashrc" ;;
+  fish) echo "   mark --completions fish > ~/.config/fish/completions/mark.fish" ;;
+  *)    echo "   eval \"\$(mark --completions zsh)\"  # zsh/bash/fish" ;;
+esac

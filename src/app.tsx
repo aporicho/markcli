@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { Box, useApp, useStdout } from "ink";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnotationInput } from "./components/AnnotationInput.js";
@@ -9,6 +11,8 @@ import {
 } from "./components/MarkdownViewer.js";
 import { StatusBar } from "./components/StatusBar.js";
 import { useAnnotations } from "./hooks/useAnnotations.js";
+import { useFileWatcher } from "./hooks/useFileWatcher.js";
+import { useIpcServer } from "./hooks/useIpcServer.js";
 import type { Annotation, AppMode } from "./types.js";
 import { renderMarkdownWrapped } from "./utils/markdown.js";
 import { cleanupMouseOnExit, disableMouseTracking } from "./utils/mouse.js";
@@ -25,15 +29,29 @@ interface AppProps {
 	content: string;
 }
 
-export function App({ filePath, content }: AppProps) {
+export function App({ filePath: initialFilePath, content: initialContent }: AppProps) {
+	const [currentFilePath, setCurrentFilePath] = useState(initialFilePath);
+	const [currentContent, setCurrentContent] = useState(initialContent);
 	const { exit } = useApp();
 	const { stdout } = useStdout();
 	const viewportHeight = (stdout?.rows ?? 24) - 1; // -1 for StatusBar
 
+	// open_file handler: MCP 通过 IPC 要求打开新文件
+	const handleOpenFile = useCallback((newPath: string) => {
+		const resolved = path.resolve(newPath);
+		if (!fs.existsSync(resolved)) return;
+		const newContent = fs.readFileSync(resolved, "utf-8");
+		setCurrentFilePath(resolved);
+		setCurrentContent(newContent);
+	}, []);
+
+	// 文件监听：Claude 编辑文件后自动刷新
+	useFileWatcher(currentFilePath, setCurrentContent);
+
 	const termWidth = stdout?.columns ?? 80;
 	const renderedLines = useMemo(
-		() => renderMarkdownWrapped(content, termWidth),
-		[content, termWidth],
+		() => renderMarkdownWrapped(currentContent, termWidth),
+		[currentContent, termWidth],
 	);
 
 	// stripped 行 + 行长度数组（用于偏移量转换）
@@ -63,7 +81,18 @@ export function App({ filePath, content }: AppProps) {
 	} | null>(null);
 
 	const { annotations, addAnnotation, updateAnnotation, removeAnnotation } =
-		useAnnotations(filePath);
+		useAnnotations(currentFilePath);
+
+	// IPC server：暴露状态给 MCP
+	const ipcState = useMemo(
+		() => ({
+			filePath: currentFilePath,
+			mode,
+			annotations,
+		}),
+		[currentFilePath, mode, annotations],
+	);
+	useIpcServer(ipcState, handleOpenFile);
 
 	const [overviewScrollTarget, setOverviewScrollTarget] = useState<{
 		offset: number;

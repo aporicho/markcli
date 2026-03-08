@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Annotation, AnnotationFile } from "../types.js";
 import { loadAnnotations, saveAnnotations } from "../utils/storage.js";
 
@@ -7,6 +7,11 @@ export function useAnnotations(filePath: string) {
 	const [data, setData] = useState<AnnotationFile>(() =>
 		loadAnnotations(filePath),
 	);
+
+	// filePath 变化时重新加载批注
+	useEffect(() => {
+		setData(loadAnnotations(filePath));
+	}, [filePath]);
 
 	const addAnnotation = useCallback(
 		(params: {

@@ -46,7 +46,7 @@ async function bundle() {
 // --- 阶段 2: Bun 编译 ---
 function compile(targetKey) {
 	const bunTarget = TARGETS[targetKey];
-	const outfile = path.join(BIN_DIR, `markcli-${targetKey}`);
+	const outfile = path.join(BIN_DIR, `mark-${targetKey}`);
 
 	console.log(`🔨 bun compile: ${targetKey}...`);
 	execSync(

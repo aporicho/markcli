@@ -25,7 +25,7 @@ case "$(uname -m)" in
 esac
 
 ASSET="${BINARY_NAME}-${OS}-${ARCH}"
-echo "📦 MarkCLI 安装程序"
+echo "📦 MarkCLI 安装/更新程序"
 echo "   系统: ${OS}-${ARCH}"
 
 # 获取最新版本

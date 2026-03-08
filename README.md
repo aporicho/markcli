@@ -98,30 +98,28 @@ npm run dev -- open README.md
 
 ## Claude Code 集成（MCP）
 
-Mark 内置 MCP server，让 Claude Code 实时读取你的批注。
-
-### 配置
+Mark 内置 MCP server，让 Claude Code 可以读取你的批注。使用一键安装脚本会自动完成配置；如需手动配置：
 
 ```bash
-claude mcp add mark -- mark-mcp
+claude mcp add mark -- mark mcp
 ```
 
-配置完成后，Claude Code 会自动在后台启动 `mark-mcp` 进程。
+### 工作流
 
-### 使用
+1. 在一个终端运行 `mark README.md`，划线、写批注
+2. 在另一个终端的 Claude Code 中告诉 Claude 去看你的批注，Claude 会调用 `get_annotations` 获取内容
+3. Claude 根据批注精准修改代码
+4. Mark 自动检测文件变化并刷新显示
 
-1. 在终端运行 `mark README.md` 打开文件
-2. 划线、写批注
-3. Claude Code 中 Claude 自动读取批注，据此修改代码
-4. Claude 修改文件后，Mark 自动刷新显示最新内容
+你也可以让 Claude 控制 Mark 打开其他文件，或者查询 Mark 当前的运行状态。
 
 ### MCP Tools
 
-| Tool | 功能 |
-|------|------|
-| `get_annotations` | 读取当前批注（支持指定文件） |
-| `get_file_status` | 查询 Mark 运行状态 |
-| `open_file` | 让 Mark 打开指定文件 |
+| Tool | 功能 | 参数 |
+|------|------|------|
+| `get_annotations` | 读取批注（选中文本 + 批注内容） | `file`（可选，默认当前文件） |
+| `get_file_status` | 查询 Mark 运行状态、当前文件、批注数 | 无 |
+| `open_file` | 让 Mark 切换到指定文件 | `path`（文件路径） |
 
 ## 文本锚定
 

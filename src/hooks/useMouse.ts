@@ -1,92 +1,139 @@
-import { useEffect, useRef } from "react";
 import { useStdin } from "ink";
+import { useEffect, useRef } from "react";
+import { disableMouseTracking, enableMouseTracking } from "../utils/mouse.js";
 import { stripAnsi, termColToCharIndex } from "../utils/ranges.js";
-import { enableMouseTracking, disableMouseTracking } from "../utils/mouse.js";
 
 export interface MouseClickEvent {
-  type: "click";
-  lineNum: number;
-  textCol: number;
+	type: "click";
+	lineNum: number;
+	textCol: number;
 }
 
 export interface MouseDragEvent {
-  type: "drag";
-  lineNum: number;
-  textCol: number;
+	type: "drag";
+	lineNum: number;
+	textCol: number;
+}
+
+export interface MouseDoubleClickEvent {
+	type: "doubleclick";
+	lineNum: number;
+	textCol: number;
+}
+
+export interface MouseReleaseEvent {
+	type: "release";
+	lineNum: number;
+	textCol: number;
 }
 
 export interface MouseScrollEvent {
-  type: "scroll";
-  direction: "up" | "down";
+	type: "scroll";
+	direction: "up" | "down";
 }
 
-export type MouseEvent = MouseClickEvent | MouseDragEvent | MouseScrollEvent;
+export type MouseEvent =
+	| MouseClickEvent
+	| MouseDragEvent
+	| MouseDoubleClickEvent
+	| MouseReleaseEvent
+	| MouseScrollEvent;
 
 interface UseMouseOptions {
-  active: boolean;
-  lines: string[];
-  scrollOffset: number;
-  onEvent: (event: MouseEvent) => void;
+	active: boolean;
+	lines: string[];
+	scrollOffset: number;
+	onEvent: (event: MouseEvent) => void;
 }
 
-export function useMouse({ active, lines, scrollOffset, onEvent }: UseMouseOptions) {
-  const stdinContext = useStdin();
-  const emitter = (stdinContext as any).internal_eventEmitter;
+export function useMouse({
+	active,
+	lines,
+	scrollOffset,
+	onEvent,
+}: UseMouseOptions) {
+	const stdinContext = useStdin();
+	const emitter = (stdinContext as any).internal_eventEmitter;
 
-  const stateRef = useRef({ scrollOffset, active, lines, onEvent });
-  stateRef.current = { scrollOffset, active, lines, onEvent };
+	const stateRef = useRef({ scrollOffset, active, lines, onEvent });
+	stateRef.current = { scrollOffset, active, lines, onEvent };
 
-  useEffect(() => {
-    if (!active) {
-      disableMouseTracking();
-      return;
-    }
+	const lastClickRef = useRef<{
+		time: number;
+		lineNum: number;
+		textCol: number;
+	} | null>(null);
 
-    enableMouseTracking();
+	useEffect(() => {
+		if (!active) {
+			disableMouseTracking();
+			return;
+		}
 
-    const handleInput = (data: Buffer | string) => {
-      const str = typeof data === "string" ? data : data.toString();
-      const s = stateRef.current;
-      const sgrRegex = /\x1b\[<(\d+);(\d+);(\d+)([Mm])/g;
-      let match;
-      while ((match = sgrRegex.exec(str)) !== null) {
-        const button = parseInt(match[1]!, 10);
-        const col = parseInt(match[2]!, 10);
-        const row = parseInt(match[3]!, 10);
-        const isRelease = match[4] === "m";
+		enableMouseTracking();
 
-        // 滚轮
-        if (button === 64) { s.onEvent({ type: "scroll", direction: "up" }); continue; }
-        if (button === 65) { s.onEvent({ type: "scroll", direction: "down" }); continue; }
+		const handleInput = (data: Buffer | string) => {
+			const str = typeof data === "string" ? data : data.toString();
+			const s = stateRef.current;
+			const sgrRegex = /\x1b\[<(\d+);(\d+);(\d+)([Mm])/g;
+			let match;
+			while ((match = sgrRegex.exec(str)) !== null) {
+				const button = parseInt(match[1]!, 10);
+				const col = parseInt(match[2]!, 10);
+				const row = parseInt(match[3]!, 10);
+				const isRelease = match[4] === "m";
 
-        // 计算行号和文本列
-        const lineNum = s.scrollOffset + row;
-        if (lineNum < 1 || lineNum > s.lines.length) continue;
-        const lineText = s.lines[lineNum - 1] ?? "";
-        const stripped = stripAnsi(lineText);
-        // col 是 1-based 终端列，减 1 转 0-based
-        const termCol = Math.max(0, col - 1);
-        const textCol = termColToCharIndex(stripped, termCol);
+				// 滚轮
+				if (button === 64) {
+					s.onEvent({ type: "scroll", direction: "up" });
+					continue;
+				}
+				if (button === 65) {
+					s.onEvent({ type: "scroll", direction: "down" });
+					continue;
+				}
 
-        // 左键点击
-        if (button === 0 && !isRelease) {
-          s.onEvent({ type: "click", lineNum, textCol });
-          continue;
-        }
+				// 计算行号和文本列
+				const lineNum = s.scrollOffset + row;
+				if (lineNum < 1 || lineNum > s.lines.length) continue;
+				const lineText = s.lines[lineNum - 1] ?? "";
+				const stripped = stripAnsi(lineText);
+				// col 是 1-based 终端列，减 1 转 0-based
+				const termCol = Math.max(0, col - 1);
+				const textCol = termColToCharIndex(stripped, termCol);
 
-        // 左键拖拽
-        if (button === 32) {
-          s.onEvent({ type: "drag", lineNum, textCol });
-          continue;
-        }
-      }
-    };
+				// 左键松开
+				if (button === 0 && isRelease) {
+					s.onEvent({ type: "release", lineNum, textCol });
+					continue;
+				}
 
-    emitter?.on("input", handleInput);
+				// 左键点击 / 双击检测
+				if (button === 0 && !isRelease) {
+					const now = Date.now();
+					const last = lastClickRef.current;
+					if (last && now - last.time < 400 && last.lineNum === lineNum) {
+						lastClickRef.current = null;
+						s.onEvent({ type: "doubleclick", lineNum, textCol });
+					} else {
+						lastClickRef.current = { time: now, lineNum, textCol };
+						s.onEvent({ type: "click", lineNum, textCol });
+					}
+					continue;
+				}
 
-    return () => {
-      disableMouseTracking();
-      emitter?.removeListener("input", handleInput);
-    };
-  }, [active, emitter]);
+				// 左键拖拽
+				if (button === 32) {
+					s.onEvent({ type: "drag", lineNum, textCol });
+				}
+			}
+		};
+
+		emitter?.on("input", handleInput);
+
+		return () => {
+			disableMouseTracking();
+			emitter?.removeListener("input", handleInput);
+		};
+	}, [active, emitter]);
 }

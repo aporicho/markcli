@@ -15,9 +15,6 @@ const version = fs.existsSync(pkgPath)
 	? JSON.parse(fs.readFileSync(pkgPath, "utf-8")).version
 	: "unknown";
 
-// 启动时清理残留鼠标追踪，退出时兜底关闭
-disableMouseTracking();
-cleanupMouseOnExit();
 
 const cli = meow(
 	`
@@ -147,6 +144,9 @@ if (!fs.existsSync(resolvedPath)) {
 
 switch (command) {
 	case "open": {
+		// 仅在打开 TUI 时初始化鼠标追踪
+		disableMouseTracking();
+		cleanupMouseOnExit();
 		const content = fs.readFileSync(resolvedPath, "utf-8");
 		const { waitUntilExit } = render(
 			<App filePath={resolvedPath} content={content} />,

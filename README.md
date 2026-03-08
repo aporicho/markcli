@@ -17,24 +17,20 @@
 ## 安装
 
 ```bash
-# 克隆项目
-git clone <repo-url>
-cd MarkCLI
-
-# 安装依赖
-npm install
-
-# 构建
-npm run build
-
-# 全局链接（可选）
-npm link
+curl -fsSL https://raw.githubusercontent.com/aporicho/markcli/main/install.sh | bash
 ```
+
+自动检测系统和架构，下载对应二进制到 `~/.local/bin`，无需 Node.js。
+
+支持平台：macOS (Apple Silicon / Intel)、Linux (x64 / ARM64)。
 
 ## 使用
 
 ```bash
-# 打开文件进行阅读和批注
+# 直接打开文件
+markcli README.md
+
+# 也可以显式指定命令
 markcli open README.md
 
 # 查看文件的所有批注（JSON）
@@ -47,9 +43,11 @@ markcli show README.md
 markcli clear README.md
 ```
 
-开发模式：
+### 从源码运行
 
 ```bash
+git clone https://github.com/aporicho/markcli.git
+cd markcli && npm install
 npm run dev -- open README.md
 ```
 

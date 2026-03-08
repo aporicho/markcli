@@ -29,6 +29,7 @@ const cli = meow(
     show <文件>    输出格式化的批注摘要
     clear <文件>   清除所有批注
     mcp            启动 MCP server（供 Claude Code 调用）
+    update         检查并更新到最新版本
 
   选项
     --version, -V  显示版本号
@@ -122,6 +123,56 @@ if (command === "mcp") {
 	await server.connect(transport);
 	// MCP server 通过 stdio 持续运行，永不 resolve
 	await new Promise<void>(() => {});
+}
+
+// `mark update` 自更新
+if (command === "update") {
+	const { execSync } = await import("node:child_process");
+	const os = await import("node:os");
+
+	const platform = os.platform() === "darwin" ? "darwin" : "linux";
+	const arch = os.arch() === "arm64" ? "arm64" : "x64";
+	const asset = `mark-${platform}-${arch}`;
+	const repo = "aporicho/markcli";
+
+	console.log(`当前版本: ${version}`);
+	console.log("检查最新版本...");
+
+	try {
+		const res = execSync(
+			`curl -fsSL "https://api.github.com/repos/${repo}/releases/latest"`,
+			{ encoding: "utf-8" },
+		);
+		const latest = JSON.parse(res).tag_name as string;
+		const latestVersion = latest.replace(/^v/, "");
+
+		if (version === latestVersion) {
+			console.log(`已是最新版本 (${version})`);
+			process.exit(0);
+		}
+
+		console.log(`发现新版本: ${latest}`);
+		const binPath = process.execPath;
+		const url = `https://github.com/${repo}/releases/download/${latest}/${asset}`;
+
+		console.log("下载中...");
+		execSync(`curl -fsSL -o "${binPath}" "${url}"`, { stdio: "inherit" });
+		execSync(`chmod +x "${binPath}"`);
+
+		// macOS: 清除隔离属性并重新签名
+		if (platform === "darwin") {
+			execSync(
+				`xattr -dr com.apple.quarantine "${binPath}" 2>/dev/null; xattr -dr com.apple.provenance "${binPath}" 2>/dev/null; codesign --force --sign - "${binPath}" 2>/dev/null`,
+				{ shell: "/bin/bash" },
+			);
+		}
+
+		console.log(`✅ 已更新到 ${latest}`);
+	} catch (e) {
+		console.error("更新失败:", (e as Error).message);
+		process.exit(1);
+	}
+	process.exit(0);
 }
 
 // 支持 `mark README.md` 直接打开（省略 open）

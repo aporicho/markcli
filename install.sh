@@ -61,12 +61,14 @@ fi
 
 chmod +x "$INSTALL_PATH"
 
-# 验证
-if "$INSTALL_PATH" --help &>/dev/null; then
-  echo "✅ 安装成功！"
-else
-  echo "✅ 已安装到 ${INSTALL_PATH}"
+# macOS: 清除隔离属性并重新签名，否则 Gatekeeper 会 SIGKILL 未签名二进制
+if [ "$OS" = "darwin" ]; then
+  xattr -dr com.apple.quarantine "$INSTALL_PATH" 2>/dev/null || true
+  xattr -dr com.apple.provenance "$INSTALL_PATH" 2>/dev/null || true
+  codesign --force --sign - "$INSTALL_PATH" 2>/dev/null || true
 fi
+
+echo "✅ 已安装到 ${INSTALL_PATH}"
 
 echo "   路径: ${INSTALL_PATH}"
 

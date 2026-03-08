@@ -22,6 +22,7 @@ cleanupMouseOnExit();
 const cli = meow(
 	`
   用法
+    $ mark                  选择当前目录的 .md 文件打开
     $ mark <文件>           直接打开文件
     $ mark <命令> <文件>
 
@@ -75,9 +76,42 @@ if (cli.flags.completions !== undefined) {
 
 let [command, filePath] = cli.input;
 
+// 无参数时：列出当前目录的 .md 文件让用户选择
 if (!command) {
-	cli.showHelp();
-	process.exit(0);
+	const mdFiles = fs
+		.readdirSync(".")
+		.filter((f) => f.endsWith(".md") && fs.statSync(f).isFile())
+		.sort();
+	if (mdFiles.length === 0) {
+		console.error("当前目录没有 Markdown 文件");
+		process.exit(1);
+	}
+	if (mdFiles.length === 1) {
+		command = "open";
+		filePath = mdFiles[0];
+		console.log(`打开 ${filePath}`);
+	} else {
+		const readline = await import("node:readline");
+		const rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
+		console.log("选择要打开的文件：\n");
+		for (let i = 0; i < mdFiles.length; i++) {
+			console.log(`  ${i + 1}) ${mdFiles[i]}`);
+		}
+		const answer = await new Promise<string>((resolve) => {
+			rl.question("\n输入编号: ", resolve);
+		});
+		rl.close();
+		const idx = Number.parseInt(answer, 10) - 1;
+		if (idx < 0 || idx >= mdFiles.length || Number.isNaN(idx)) {
+			console.error("无效选择");
+			process.exit(1);
+		}
+		command = "open";
+		filePath = mdFiles[idx];
+	}
 }
 
 // `mark mcp` 启动 MCP server（供 Claude Code 调用）

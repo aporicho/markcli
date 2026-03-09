@@ -1,6 +1,6 @@
 {
   "name": "markcli",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "终端 Markdown 批注工具",
   "type": "module",
   "main": "dist/cli.js",

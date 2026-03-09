@@ -20,10 +20,6 @@ export interface AddAnnotationRequest {
 	file?: string;
 	selectedText: string;
 	comment: string;
-	startLine: number;
-	endLine: number;
-	startCol?: number;
-	endCol?: number;
 }
 
 export interface UpdateAnnotationRequest {

@@ -92,8 +92,9 @@ export function App({
 			filePath: currentFilePath,
 			mode,
 			annotations,
+			strippedLines,
 		}),
-		[currentFilePath, mode, annotations],
+		[currentFilePath, mode, annotations, strippedLines],
 	);
 	useIpcServer(ipcState, {
 		onOpenFile: handleOpenFile,

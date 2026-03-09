@@ -193,7 +193,7 @@ export function createMcpServer(): McpServer {
 	// add_annotation: 添加批注
 	server.tool(
 		"add_annotation",
-		"在 Mark 中添加批注。必须指定选中的文本、批注内容和行号范围。Mark 必须已经在运行。",
+		"在 Mark 中添加批注。只需指定要选中的文本和批注内容，TUI 会自动定位文本位置。Mark 必须已经在运行。",
 		{
 			file: z
 				.string()
@@ -201,20 +201,8 @@ export function createMcpServer(): McpServer {
 				.describe("文件路径（可选，默认为当前打开的文件）"),
 			selectedText: z.string().describe("选中的原文"),
 			comment: z.string().describe("批注内容"),
-			startLine: z.number().describe("起始行号"),
-			endLine: z.number().describe("结束行号"),
-			startCol: z.number().optional().describe("起始列号（可选）"),
-			endCol: z.number().optional().describe("结束列号（可选）"),
 		},
-		async ({
-			file,
-			selectedText,
-			comment,
-			startLine,
-			endLine,
-			startCol,
-			endCol,
-		}) => {
+		async ({ file, selectedText, comment }) => {
 			const connected = await ipc.isConnected();
 			if (!connected) {
 				return {
@@ -234,10 +222,6 @@ export function createMcpServer(): McpServer {
 					file,
 					selectedText,
 					comment,
-					startLine,
-					endLine,
-					startCol,
-					endCol,
 				});
 				if (res.type === "ok") {
 					return { content: [{ type: "text", text: res.message }] };

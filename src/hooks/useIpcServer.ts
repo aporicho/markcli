@@ -8,8 +8,11 @@ interface IpcHandlers {
 		comment: string;
 		startLine: number;
 		endLine: number;
-		startCol?: number;
-		endCol?: number;
+		startCol: number;
+		endCol: number;
+		quote: string;
+		prefix: string;
+		suffix: string;
 	}) => void;
 	onUpdateAnnotation: (id: string, comment: string) => void;
 	onRemoveAnnotation: (id: string) => void;

@@ -3,6 +3,11 @@
 import fs from "node:fs";
 import net from "node:net";
 import type { Annotation } from "../types.js";
+import {
+	extractAnchor,
+	offsetToLineCol,
+	relocateAnchor,
+} from "../utils/textAnchor.js";
 import type { IpcRequest, IpcResponse } from "./protocol.js";
 import { getSocketPath } from "./socket-path.js";
 
@@ -10,6 +15,7 @@ export interface TuiState {
 	filePath: string;
 	mode: string;
 	annotations: Annotation[];
+	strippedLines: string[];
 }
 
 type OpenFileHandler = (filePath: string) => void;
@@ -18,8 +24,11 @@ type AddAnnotationHandler = (params: {
 	comment: string;
 	startLine: number;
 	endLine: number;
-	startCol?: number;
-	endCol?: number;
+	startCol: number;
+	endCol: number;
+	quote: string;
+	prefix: string;
+	suffix: string;
 }) => void;
 type UpdateAnnotationHandler = (id: string, comment: string) => void;
 type RemoveAnnotationHandler = (id: string) => void;
@@ -128,18 +137,50 @@ export class IpcServer {
 				return { type: "error", message: "open_file handler not set" };
 			}
 			case "add_annotation": {
-				if (this.onAddAnnotation) {
-					this.onAddAnnotation({
-						selectedText: req.selectedText,
-						comment: req.comment,
-						startLine: req.startLine,
-						endLine: req.endLine,
-						startCol: req.startCol,
-						endCol: req.endCol,
-					});
-					return { type: "ok", message: "Annotation added" };
+				if (!this.onAddAnnotation) {
+					return { type: "error", message: "add_annotation handler not set" };
 				}
-				return { type: "error", message: "add_annotation handler not set" };
+
+				const { strippedLines } = this.state;
+				const lineLengths = strippedLines.map((l) => l.length);
+				const fullStrippedText = strippedLines.join("\n");
+
+				// 精确匹配
+				let matchStart = fullStrippedText.indexOf(req.selectedText);
+
+				if (matchStart === -1) {
+					// 模糊匹配兜底
+					const range = relocateAnchor(fullStrippedText, {
+						quote: req.selectedText,
+						prefix: "",
+						suffix: "",
+					});
+					if (!range) {
+						return {
+							type: "error",
+							message: `Text not found: "${req.selectedText.slice(0, 50)}..."`,
+						};
+					}
+					matchStart = range.start;
+				}
+
+				const matchEnd = matchStart + req.selectedText.length;
+				const start = offsetToLineCol(lineLengths, matchStart);
+				const end = offsetToLineCol(lineLengths, matchEnd);
+				const anchor = extractAnchor(fullStrippedText, matchStart, matchEnd);
+
+				this.onAddAnnotation({
+					selectedText: req.selectedText,
+					comment: req.comment,
+					startLine: start.line,
+					endLine: end.line,
+					startCol: start.col,
+					endCol: end.col,
+					quote: anchor.quote,
+					prefix: anchor.prefix,
+					suffix: anchor.suffix,
+				});
+				return { type: "ok", message: "Annotation added" };
 			}
 			case "update_annotation": {
 				if (this.onUpdateAnnotation) {

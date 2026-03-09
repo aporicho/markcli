@@ -14,6 +14,7 @@ interface UseKeyboardOptions {
 	onMoveLineBy: (delta: number) => void;
 	onMoveColBy: (delta: number) => void;
 	onOverviewMode?: () => void;
+	onCycleTheme?: () => void;
 }
 
 export function useKeyboard({
@@ -29,6 +30,7 @@ export function useKeyboard({
 	onMoveLineBy,
 	onMoveColBy,
 	onOverviewMode,
+	onCycleTheme,
 }: UseKeyboardOptions) {
 	useInput((input, key) => {
 		if (!active) return;
@@ -59,6 +61,12 @@ export function useKeyboard({
 		}
 		if (key.pageDown) {
 			onScrollDown(viewportHeight - 2);
+			return;
+		}
+
+		// Ctrl+T: 循环切换主题（任何非选中状态均可）
+		if (key.ctrl && input === "t" && onCycleTheme) {
+			onCycleTheme();
 			return;
 		}
 

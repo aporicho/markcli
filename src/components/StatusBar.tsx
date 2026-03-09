@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import type React from "react";
+import type { Theme } from "../themes.js";
 import type { AppMode } from "../types.js";
 
 interface StatusBarProps {
@@ -10,6 +11,7 @@ interface StatusBarProps {
 	selectionEnd: number | null;
 	annotationCount: number;
 	isEditing?: boolean;
+	theme: Theme;
 }
 
 interface Segment {
@@ -20,13 +22,6 @@ interface Segment {
 
 const ARROW = "\ue0b0";
 
-const MODE_COLORS: Record<AppMode, string> = {
-	reading: "green",
-	selecting: "yellow",
-	overview: "blue",
-	annotating: "cyan",
-};
-
 const MODE_LABELS: Record<AppMode, string> = {
 	reading: " 阅读 ",
 	selecting: " 选中 ",
@@ -35,13 +30,13 @@ const MODE_LABELS: Record<AppMode, string> = {
 };
 
 const SHORTCUTS: Record<AppMode, string> = {
-	reading: " v:选中 d:总览 q:退出 ↑↓:滚动 ",
+	reading: " v:选中 d:总览 ^T:主题 q:退出 ↑↓:滚动 ",
 	selecting: " a:批注 Esc:取消 ↑↓:扩展 ",
 	overview: " Enter:编辑 ⌫:删除 ↑↓:选择 Esc:返回 ",
-	annotating: " Enter:确认 Esc:取消 ",
+	annotating: " Enter:确认 ^J:换行 Esc:取消 ",
 };
 
-const SHORTCUTS_EDITING = " Enter:提交 ^R:调整选区 ^D:删除 Esc:取消 ";
+const SHORTCUTS_EDITING = " Enter:提交 ^J:换行 ^R:调整选区 ^D:删除 Esc:取消 ";
 
 function renderSegments(segments: Segment[], trailingBg?: string) {
 	const nodes: React.ReactNode[] = [];
@@ -72,10 +67,12 @@ export function StatusBar({
 	selectionEnd,
 	annotationCount,
 	isEditing,
+	theme,
 }: StatusBarProps) {
+	const sb = theme.statusBar;
 	const leftSegments: Segment[] = [
-		{ text: MODE_LABELS[mode], fg: "black", bg: MODE_COLORS[mode] },
-		{ text: ` ${annotationCount} 批注 `, fg: "white", bg: "gray" },
+		{ text: MODE_LABELS[mode], fg: sb.modeFg, bg: sb.mode[mode] },
+		{ text: ` ${annotationCount} 批注 `, fg: sb.fg, bg: sb.dimBg },
 	];
 
 	if (selectionStart !== null) {
@@ -83,15 +80,15 @@ export function StatusBar({
 			selectionEnd !== null && selectionEnd !== selectionStart
 				? `L${selectionStart}-${selectionEnd}`
 				: `L${selectionStart}`;
-		leftSegments.push({ text: ` ${range} `, fg: "white", bg: "blue" });
+		leftSegments.push({ text: ` ${range} `, fg: sb.fg, bg: sb.accentBg });
 	}
 
 	const shortcuts =
 		mode === "annotating" && isEditing ? SHORTCUTS_EDITING : SHORTCUTS[mode];
 
 	const rightSegments: Segment[] = [
-		{ text: ` 行 ${currentLine}/${totalLines} `, fg: "white", bg: "gray" },
-		{ text: shortcuts, fg: "white", bg: "black" },
+		{ text: ` 行 ${currentLine}/${totalLines} `, fg: sb.fg, bg: sb.dimBg },
+		{ text: shortcuts, fg: sb.fg, bg: sb.bg },
 	];
 
 	return (

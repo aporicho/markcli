@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
+import type { Theme } from "../themes.js";
 import type { Annotation } from "../types.js";
 import { disableMouseTracking } from "../utils/mouse.js";
 
@@ -13,6 +14,7 @@ interface OverviewPanelProps {
 	left?: number;
 	width?: number;
 	maxHeight: number;
+	theme?: Theme;
 }
 
 export function OverviewPanel({
@@ -25,6 +27,7 @@ export function OverviewPanel({
 	left,
 	width,
 	maxHeight,
+	theme,
 }: OverviewPanelProps) {
 	const [cursorIndex, setCursorIndex] = useState(0);
 
@@ -111,8 +114,8 @@ export function OverviewPanel({
 		<Box
 			flexDirection="column"
 			borderStyle="round"
-			borderColor="blue"
-			backgroundColor="black"
+			borderColor={theme?.panel.border ?? "blue"}
+			backgroundColor={theme?.panel.bg ?? "black"}
 			paddingX={1}
 			position="absolute"
 			marginTop={top}
@@ -138,11 +141,24 @@ export function OverviewPanel({
 						ann.comment.length > 25
 							? `${ann.comment.slice(0, 22)}...`
 							: ann.comment;
-					const prefix = isCurrent ? "▸" : " ";
+					const isResolved = ann.resolved === true;
+					const prefix = isCurrent ? "▸" : isResolved ? "✓" : " ";
 					return (
-						<Text key={ann.id} inverse={isCurrent}>
+						<Text
+							key={ann.id}
+							inverse={isCurrent}
+							dimColor={isResolved && !isCurrent}
+						>
 							{prefix}{" "}
-							<Text color={isCurrent ? undefined : "cyan"}>
+							<Text
+								color={
+									isCurrent
+										? undefined
+										: isResolved
+											? undefined
+											: (theme?.panel.accent ?? "cyan")
+								}
+							>
 								{range.padEnd(9)}
 							</Text>
 							<Text dimColor={!isCurrent}>

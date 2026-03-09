@@ -3,10 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useKeyboard } from "../hooks/useKeyboard.js";
 import { useMouse } from "../hooks/useMouse.js";
 import { useSelection } from "../hooks/useSelection.js";
+import type { Theme } from "../themes.js";
 import type { Annotation } from "../types.js";
 import {
 	buildSegments,
-	getAnnotationRangesForLine,
+	getAnnotatedRangesForLine,
+	getResolvedRangesForLine,
 	getSelectionRangeForLine,
 	stripAnsi,
 } from "../utils/ranges.js";
@@ -37,6 +39,8 @@ interface MarkdownViewerProps {
 	onEditAnnotation?: (annotation: Annotation) => void;
 	scrollToOffset?: { offset: number; rev: number } | null;
 	extraScrollPadding?: number;
+	theme?: Theme;
+	onCycleTheme?: () => void;
 }
 
 export function MarkdownViewer({
@@ -51,6 +55,8 @@ export function MarkdownViewer({
 	onEditAnnotation,
 	scrollToOffset,
 	extraScrollPadding = 0,
+	theme,
+	onCycleTheme,
 }: MarkdownViewerProps) {
 	const [scrollOffset, setScrollOffset] = useState(0);
 	const maxOffset = Math.max(
@@ -160,6 +166,7 @@ export function MarkdownViewer({
 		},
 		onMoveColBy: selection.moveColBy,
 		onOverviewMode,
+		onCycleTheme,
 	});
 
 	// ---- 状态上报 ----
@@ -219,14 +226,23 @@ export function MarkdownViewer({
 								normEnd,
 							)
 						: null;
-				const annRanges = getAnnotationRangesForLine(
+				const annRanges = getAnnotatedRangesForLine(
+					annotations,
+					lineNum,
+					stripped.length,
+				);
+				const resolvedRanges = getResolvedRangesForLine(
 					annotations,
 					lineNum,
 					stripped.length,
 				);
 
 				// 无高亮 → 直接渲染原始行（保留 ANSI 颜色）
-				if (!selRange && annRanges.length === 0) {
+				if (
+					!selRange &&
+					annRanges.length === 0 &&
+					resolvedRanges.length === 0
+				) {
 					return (
 						<Box key={lineNum} flexDirection="row">
 							<Text>{line || " "}</Text>
@@ -235,21 +251,49 @@ export function MarkdownViewer({
 				}
 
 				// 有高亮 → 分段渲染
-				const segments = buildSegments(stripped, selRange, annRanges);
+				const segments = buildSegments(
+					stripped,
+					selRange,
+					annRanges,
+					resolvedRanges,
+				);
 
 				return (
 					<Box key={lineNum} flexDirection="row">
 						{segments.map((seg, i) => {
 							if (seg.selected) {
 								return (
-									<Text key={i} backgroundColor="blue" color="white">
+									<Text
+										key={i}
+										backgroundColor={theme?.selection.bg ?? "blue"}
+										color={theme?.selection.fg ?? "white"}
+									>
 										{seg.text}
 									</Text>
 								);
 							}
-							if (seg.annotated) {
+							if (seg.annotationIndex !== null) {
+								const isEven = seg.annotationIndex % 2 === 0;
+								const colors = isEven
+									? theme?.annotation
+									: theme?.annotationAlt;
 								return (
-									<Text key={i} backgroundColor="yellow" color="black">
+									<Text
+										key={i}
+										backgroundColor={colors?.bg ?? (isEven ? "yellow" : "cyan")}
+										color={colors?.fg ?? "black"}
+									>
+										{seg.text}
+									</Text>
+								);
+							}
+							if (seg.resolvedIndex !== null) {
+								return (
+									<Text
+										key={i}
+										backgroundColor={theme?.annotationResolved.bg ?? "green"}
+										color={theme?.annotationResolved.fg ?? "black"}
+									>
 										{seg.text}
 									</Text>
 								);

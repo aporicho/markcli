@@ -13,6 +13,7 @@ import { StatusBar } from "./components/StatusBar.js";
 import { useAnnotations } from "./hooks/useAnnotations.js";
 import { useFileWatcher } from "./hooks/useFileWatcher.js";
 import { useIpcServer } from "./hooks/useIpcServer.js";
+import { getTheme, THEME_NAMES, type Theme } from "./themes.js";
 import type { Annotation, AppMode } from "./types.js";
 import { renderMarkdownWrapped } from "./utils/markdown.js";
 import { cleanupMouseOnExit, disableMouseTracking } from "./utils/mouse.js";
@@ -27,12 +28,23 @@ import {
 interface AppProps {
 	filePath: string;
 	content: string;
+	theme: Theme;
 }
 
 export function App({
 	filePath: initialFilePath,
 	content: initialContent,
+	theme: initialTheme,
 }: AppProps) {
+	const [theme, setTheme] = useState(initialTheme);
+
+	const cycleTheme = useCallback(() => {
+		setTheme((prev) => {
+			const idx = THEME_NAMES.indexOf(prev.name);
+			const next = THEME_NAMES[(idx + 1) % THEME_NAMES.length]!;
+			return getTheme(next);
+		});
+	}, []);
 	const [currentFilePath, setCurrentFilePath] = useState(initialFilePath);
 	const [currentContent, setCurrentContent] = useState(initialContent);
 	const { exit } = useApp();
@@ -47,6 +59,16 @@ export function App({
 		setCurrentFilePath(resolved);
 		setCurrentContent(newContent);
 	}, []);
+
+	// refresh handler: MCP 通知刷新当前文件
+	const handleRefresh = useCallback(() => {
+		try {
+			const newContent = fs.readFileSync(currentFilePath, "utf-8");
+			setCurrentContent(newContent);
+		} catch {
+			// 文件可能被删除，忽略
+		}
+	}, [currentFilePath]);
 
 	// 文件监听：Claude 编辑文件后自动刷新
 	useFileWatcher(currentFilePath, setCurrentContent);
@@ -83,8 +105,14 @@ export function App({
 		endCol: number;
 	} | null>(null);
 
-	const { annotations, addAnnotation, updateAnnotation, removeAnnotation } =
-		useAnnotations(currentFilePath);
+	const {
+		annotations,
+		addAnnotation,
+		updateAnnotation,
+		removeAnnotation,
+		resolveAnnotation,
+		clearAllAnnotations,
+	} = useAnnotations(currentFilePath);
 
 	// IPC server：暴露状态给 MCP
 	const ipcState = useMemo(
@@ -103,11 +131,29 @@ export function App({
 			viewerStatus.selectedText,
 		],
 	);
+	// jump_to_annotation handler: MCP 通过 IPC 要求跳转到指定批注
+	const handleJumpToAnnotation = useCallback(
+		(id: string) => {
+			const ann = annotations.find((a) => a.id === id);
+			if (!ann) return;
+			overviewRevRef.current += 1;
+			setOverviewScrollTarget({
+				offset: Math.max(0, ann.startLine - 3),
+				rev: overviewRevRef.current,
+			});
+		},
+		[annotations],
+	);
+
 	useIpcServer(ipcState, {
 		onOpenFile: handleOpenFile,
+		onRefresh: handleRefresh,
 		onAddAnnotation: addAnnotation,
 		onUpdateAnnotation: updateAnnotation,
 		onRemoveAnnotation: removeAnnotation,
+		onResolveAnnotation: resolveAnnotation,
+		onClearAnnotations: clearAllAnnotations,
+		onJumpToAnnotation: handleJumpToAnnotation,
 	});
 
 	const [overviewScrollTarget, setOverviewScrollTarget] = useState<{
@@ -402,18 +448,27 @@ export function App({
 	const floatWidth = termWidth - floatLeft * 2 + 1;
 
 	// 浮动批注窗口位置计算
+	const annotationValue =
+		reselectingComment ?? editingAnnotation?.comment ?? "";
+	const annotationLineCount = annotationValue.split("\n").length;
+	const annotationPanelHeight = 2 + annotationLineCount;
+
 	const floatTop = useMemo(() => {
 		if (!pendingSelection) return 0;
 		const selEndInViewport =
 			pendingSelection.endLine - viewerStatus.scrollOffset - 1;
 		const selStartInViewport =
 			pendingSelection.startLine - viewerStatus.scrollOffset - 1;
-		// 弹窗高度约 4 行（边框 + 预览 + 输入）
-		if (selEndInViewport + 6 < viewportHeight) {
+		if (selEndInViewport + annotationPanelHeight + 3 < viewportHeight) {
 			return selEndInViewport + 1;
 		}
-		return Math.max(0, selStartInViewport - 5);
-	}, [pendingSelection, viewerStatus.scrollOffset, viewportHeight]);
+		return Math.max(0, selStartInViewport - annotationPanelHeight - 2);
+	}, [
+		pendingSelection,
+		viewerStatus.scrollOffset,
+		viewportHeight,
+		annotationPanelHeight,
+	]);
 
 	return (
 		<Box flexDirection="column" height={stdout?.rows ?? 24}>
@@ -432,6 +487,8 @@ export function App({
 					extraScrollPadding={
 						mode === "overview" ? viewportHeight - overviewFloatTop : 0
 					}
+					theme={theme}
+					onCycleTheme={cycleTheme}
 				/>
 				{mode === "annotating" && pendingSelection && (
 					<AnnotationInput
@@ -444,6 +501,7 @@ export function App({
 						left={floatLeft}
 						width={floatWidth}
 						initialValue={reselectingComment ?? editingAnnotation?.comment}
+						theme={theme}
 					/>
 				)}
 				{mode === "overview" && (
@@ -457,6 +515,7 @@ export function App({
 						left={floatLeft}
 						width={floatWidth}
 						maxHeight={overviewPanelHeight}
+						theme={theme}
 					/>
 				)}
 			</Box>
@@ -468,6 +527,7 @@ export function App({
 				selectionEnd={selEnd}
 				annotationCount={resolvedAnnotations.length}
 				isEditing={mode === "annotating" && !!editingAnnotation}
+				theme={theme}
 			/>
 		</Box>
 	);

@@ -8,8 +8,11 @@ import { AnnotationInput } from "./components/AnnotationInput.js";
 import { MarkdownViewer } from "./components/MarkdownViewer.js";
 import { StatusBar } from "./components/StatusBar.js";
 import { TextInput } from "./components/TextInput.js";
+import { getTheme } from "./themes.js";
 import { renderMarkdownWrapped } from "./utils/markdown.js";
 import { cleanupMouseOnExit, disableMouseTracking } from "./utils/mouse.js";
+
+const defaultTheme = getTheme("tokyonight-night");
 
 // ============================================================
 // 1. TextInput 单独测试
@@ -158,6 +161,7 @@ function DebugStatusBar() {
 				selectionStart={modes[idx] !== "reading" ? 10 : null}
 				selectionEnd={modes[idx] !== "reading" ? 12 : null}
 				annotationCount={3}
+				theme={defaultTheme}
 			/>
 		</Box>
 	);

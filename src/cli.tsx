@@ -42,6 +42,13 @@ if (typeof Bun !== "undefined" && process.stdin.isTTY) {
 }
 
 import { App } from "./app.js";
+import {
+	DEFAULT_THEME,
+	getTheme,
+	isValidTheme,
+	THEME_NAMES,
+} from "./themes.js";
+import { loadConfig } from "./utils/config.js";
 import { cleanupMouseOnExit, disableMouseTracking } from "./utils/mouse.js";
 import { clearAnnotations, loadAnnotations } from "./utils/storage.js";
 
@@ -73,6 +80,7 @@ const cli = meow(
 
   选项
     --version, -V  显示版本号
+    --theme, -t    主题 (tokyonight-night|storm|moon|day)
     --completions  输出 shell 补全脚本（支持 zsh/bash/fish）
 
   示例
@@ -84,6 +92,7 @@ const cli = meow(
 		importMeta: import.meta,
 		flags: {
 			version: { type: "boolean", shortFlag: "V" },
+			theme: { type: "string", shortFlag: "t" },
 			completions: { type: "string" },
 		},
 		autoVersion: false,
@@ -306,12 +315,23 @@ if (!fs.existsSync(resolvedPath)) {
 
 switch (command) {
 	case "open": {
+		// 解析主题：CLI flag > config > default
+		const config = loadConfig();
+		const themeName = cli.flags.theme ?? config.theme ?? DEFAULT_THEME;
+		if (!isValidTheme(themeName)) {
+			console.error(
+				`错误：无效主题 "${themeName}"（可选：${THEME_NAMES.join(", ")}）`,
+			);
+			process.exit(1);
+		}
+		const theme = getTheme(themeName);
+
 		// 仅在打开 TUI 时初始化鼠标追踪
 		disableMouseTracking();
 		cleanupMouseOnExit();
 		const content = fs.readFileSync(resolvedPath, "utf-8");
 		const { waitUntilExit } = render(
-			<App filePath={resolvedPath} content={content} />,
+			<App filePath={resolvedPath} content={content} theme={theme} />,
 		);
 		waitUntilExit().then(() => {
 			process.exit(0);

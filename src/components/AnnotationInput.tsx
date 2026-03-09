@@ -1,5 +1,6 @@
 import { Box, useInput, useStdin } from "ink";
 import { useEffect, useRef, useState } from "react";
+import type { Theme } from "../themes.js";
 import { disableMouseTracking, enableMouseTracking } from "../utils/mouse.js";
 import { TextInput } from "./TextInput.js";
 
@@ -13,6 +14,7 @@ interface AnnotationInputProps {
 	left?: number;
 	width?: number;
 	initialValue?: string;
+	theme?: Theme;
 }
 
 export function AnnotationInput({
@@ -25,9 +27,13 @@ export function AnnotationInput({
 	left,
 	width,
 	initialValue,
+	theme,
 }: AnnotationInputProps) {
 	const [value, setValue] = useState(initialValue ?? "");
 	const [ready, setReady] = useState(false);
+	const [lineCount, setLineCount] = useState(
+		() => (initialValue ?? "").split("\n").length,
+	);
 
 	const stdinContext = useStdin();
 	const emitter = (
@@ -37,6 +43,8 @@ export function AnnotationInput({
 	).internal_eventEmitter;
 	const onCancelRef = useRef(onCancel);
 	onCancelRef.current = onCancel;
+	const lineCountRef = useRef(lineCount);
+	lineCountRef.current = lineCount;
 
 	const readyRef = useRef(false);
 
@@ -53,7 +61,6 @@ export function AnnotationInput({
 		enableMouseTracking();
 
 		const boxTop = (top ?? 0) + 1; // +1: marginTop 是 0-based，终端行是 1-based
-		const boxHeight = 3;
 		const boxLeft = (left ?? 0) + 1;
 		const boxWidth = width ?? 40;
 
@@ -73,6 +80,7 @@ export function AnnotationInput({
 				// ready 之前只消费数据不触发动作，防止双击残留事件误触取消
 				if (!readyRef.current) continue;
 
+				const boxHeight = 2 + lineCountRef.current;
 				const inBox =
 					row >= boxTop &&
 					row < boxTop + boxHeight &&
@@ -112,19 +120,20 @@ export function AnnotationInput({
 	return (
 		<Box
 			borderStyle="round"
-			borderColor="cyan"
-			backgroundColor="black"
+			borderColor={theme?.panel.border ?? "cyan"}
+			backgroundColor={theme?.panel.bg ?? "black"}
 			paddingX={1}
 			position="absolute"
 			marginTop={top}
 			marginLeft={left}
 			width={width}
-			height={3}
+			height={2 + lineCount}
 			flexDirection="column"
 		>
 			<TextInput
 				value={value}
 				onChange={setValue}
+				onLineCountChange={setLineCount}
 				onSubmit={(val) => {
 					if (isEditing) {
 						onSubmit(val.trim());

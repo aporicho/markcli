@@ -1,19 +1,59 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { render } from "ink";
 import meow from "meow";
+
+// Bun 编译二进制的 stdin 不能正确触发 'readable' 事件，
+// 而 Ink 完全依赖 'readable' + read() 读取输入。
+// 用 PassThrough 代理：Bun 的 'data' 事件 → PassThrough 的 'readable' 事件。
+declare const Bun: unknown;
+if (typeof Bun !== "undefined" && process.stdin.isTTY) {
+	const realStdin = process.stdin;
+	const compat = new PassThrough() as PassThrough &
+		NodeJS.ReadStream & { fd: number };
+	// 代理 TTY 属性给 Ink 检测
+	Object.defineProperty(compat, "isTTY", {
+		get: () => realStdin.isTTY,
+	});
+	compat.setRawMode = (mode: boolean) => {
+		realStdin.setRawMode(mode);
+		return compat;
+	};
+	compat.ref = () => {
+		realStdin.ref();
+		return compat;
+	};
+	compat.unref = () => {
+		realStdin.unref();
+		return compat;
+	};
+	Object.defineProperty(compat, "fd", { get: () => realStdin.fd });
+	// data 事件 → PassThrough 内部缓冲 → 触发 'readable'
+	realStdin.on("data", (chunk) => compat.push(chunk));
+	realStdin.on("end", () => compat.push(null));
+	// 替换 process.stdin
+	Object.defineProperty(process, "stdin", {
+		value: compat,
+		configurable: true,
+	});
+}
+
 import { App } from "./app.js";
 import { cleanupMouseOnExit, disableMouseTracking } from "./utils/mouse.js";
 import { clearAnnotations, loadAnnotations } from "./utils/storage.js";
 
-// 读取版本号
+// 读取版本号：编译注入优先，开发模式 fallback 到 package.json
+declare const __MARK_VERSION__: string | undefined;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkgPath = path.resolve(__dirname, "..", "package.json");
-const version = fs.existsSync(pkgPath)
-	? JSON.parse(fs.readFileSync(pkgPath, "utf-8")).version
-	: "unknown";
+const version =
+	(typeof __MARK_VERSION__ !== "undefined" ? __MARK_VERSION__ : null) ??
+	(fs.existsSync(pkgPath)
+		? JSON.parse(fs.readFileSync(pkgPath, "utf-8")).version
+		: "dev");
 
 const cli = meow(
 	`

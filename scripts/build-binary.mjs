@@ -18,6 +18,9 @@ const TARGETS = {
 	"linux-arm64": "bun-linux-arm64",
 };
 
+// 读取版本号
+const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
+
 // --- 阶段 1: esbuild 打包 ---
 async function bundle() {
 	console.log("📦 esbuild: 打包中...");
@@ -28,6 +31,9 @@ async function bundle() {
 		format: "esm",
 		outfile: BUNDLE,
 		target: "node20",
+		define: {
+			__MARK_VERSION__: JSON.stringify(pkg.version),
+		},
 		alias: {
 			"react-devtools-core": path.join(
 				ROOT,

@@ -26,10 +26,10 @@ const night: Theme = {
 	panel: { bg: "#1a1b26", border: "#7aa2f7", accent: "#7dcfff" },
 	statusBar: {
 		mode: {
-			reading: "#9ece6a",
-			selecting: "#e0af68",
-			overview: "#7aa2f7",
-			annotating: "#7dcfff",
+			reading: "#7aa2f7",
+			selecting: "#ff9e64",
+			overview: "#73daca",
+			annotating: "#bb9af7",
 		},
 		modeFg: "#1a1b26",
 		fg: "#c0caf5",
@@ -48,10 +48,10 @@ const storm: Theme = {
 	panel: { bg: "#24283b", border: "#7aa2f7", accent: "#7dcfff" },
 	statusBar: {
 		mode: {
-			reading: "#9ece6a",
-			selecting: "#e0af68",
-			overview: "#7aa2f7",
-			annotating: "#7dcfff",
+			reading: "#7aa2f7",
+			selecting: "#ff9e64",
+			overview: "#73daca",
+			annotating: "#bb9af7",
 		},
 		modeFg: "#24283b",
 		fg: "#c0caf5",
@@ -70,10 +70,10 @@ const moon: Theme = {
 	panel: { bg: "#222436", border: "#82aaff", accent: "#86e1fc" },
 	statusBar: {
 		mode: {
-			reading: "#c3e88d",
-			selecting: "#ffc777",
-			overview: "#82aaff",
-			annotating: "#86e1fc",
+			reading: "#82aaff",
+			selecting: "#ff966c",
+			overview: "#4fd6be",
+			annotating: "#fca7ea",
 		},
 		modeFg: "#222436",
 		fg: "#c8d3f5",
@@ -92,10 +92,10 @@ const day: Theme = {
 	panel: { bg: "#e1e2e7", border: "#2e7de9", accent: "#007197" },
 	statusBar: {
 		mode: {
-			reading: "#587539",
-			selecting: "#8c6c3e",
-			overview: "#2e7de9",
-			annotating: "#007197",
+			reading: "#2e7de9",
+			selecting: "#b15c00",
+			overview: "#118c74",
+			annotating: "#7847bd",
 		},
 		modeFg: "#e1e2e7",
 		fg: "#3760bf",

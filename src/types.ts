@@ -7,6 +7,7 @@ export interface Annotation {
 	selectedText: string;
 	comment: string;
 	createdAt: string;
+	resolved?: boolean;
 	// 文本锚定（W3C Web Annotation 标准）
 	quote?: string;
 	prefix?: string;

@@ -1,11 +1,8 @@
 // IPC 消息类型定义（NDJSON over Unix socket）
 
 // MCP → TUI 请求
-export interface GetAnnotationsRequest {
-	type: "get_annotations";
-	file?: string;
-}
 
+// -- 查询 --
 export interface GetStatusRequest {
 	type: "get_status";
 }
@@ -14,9 +11,20 @@ export interface GetSelectionRequest {
 	type: "get_selection";
 }
 
+// -- 文件 --
 export interface OpenFileRequest {
 	type: "open_file";
 	path: string;
+}
+
+export interface RefreshFileRequest {
+	type: "refresh_file";
+}
+
+// -- 批注 --
+export interface ListAnnotationsRequest {
+	type: "list_annotations";
+	file?: string;
 }
 
 export interface AddAnnotationRequest {
@@ -37,14 +45,33 @@ export interface RemoveAnnotationRequest {
 	id: string;
 }
 
+export interface ResolveAnnotationRequest {
+	type: "resolve_annotation";
+	id: string;
+}
+
+export interface ClearAnnotationsRequest {
+	type: "clear_annotations";
+	file?: string;
+}
+
+export interface JumpToAnnotationRequest {
+	type: "jump_to_annotation";
+	id: string;
+}
+
 export type IpcRequest =
-	| GetAnnotationsRequest
 	| GetStatusRequest
 	| GetSelectionRequest
 	| OpenFileRequest
+	| RefreshFileRequest
+	| ListAnnotationsRequest
 	| AddAnnotationRequest
 	| UpdateAnnotationRequest
-	| RemoveAnnotationRequest;
+	| RemoveAnnotationRequest
+	| ResolveAnnotationRequest
+	| ClearAnnotationsRequest
+	| JumpToAnnotationRequest;
 
 // TUI → MCP 响应
 export interface AnnotationsResponse {

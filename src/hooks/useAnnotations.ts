@@ -1,7 +1,11 @@
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useState } from "react";
 import type { Annotation, AnnotationFile } from "../types.js";
-import { loadAnnotations, saveAnnotations } from "../utils/storage.js";
+import {
+	clearAnnotations,
+	loadAnnotations,
+	saveAnnotations,
+} from "../utils/storage.js";
 
 export function useAnnotations(filePath: string) {
 	const [data, setData] = useState<AnnotationFile>(() =>
@@ -84,10 +88,33 @@ export function useAnnotations(filePath: string) {
 		[filePath],
 	);
 
+	const resolveAnnotation = useCallback(
+		(id: string) => {
+			setData((prev) => {
+				const next = {
+					...prev,
+					annotations: prev.annotations.map((a) =>
+						a.id === id ? { ...a, resolved: true } : a,
+					),
+				};
+				saveAnnotations(filePath, next);
+				return next;
+			});
+		},
+		[filePath],
+	);
+
+	const clearAllAnnotations = useCallback(() => {
+		setData({ file: filePath, annotations: [] });
+		clearAnnotations(filePath);
+	}, [filePath]);
+
 	return {
 		annotations: data.annotations,
 		addAnnotation,
 		updateAnnotation,
 		removeAnnotation,
+		resolveAnnotation,
+		clearAllAnnotations,
 	};
 }

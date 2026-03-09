@@ -32,9 +32,14 @@ export function useFileWatcher(
 		} catch {
 			// 文件不存在或不支持 watch
 		}
+
+		// polling fallback：确保 WSL2/网络文件系统等环境也能检测变化
+		fs.watchFile(filePath, { interval: 1000 }, handleChange);
+
 		return () => {
 			if (timerRef.current) clearTimeout(timerRef.current);
 			watcher?.close();
+			fs.unwatchFile(filePath, handleChange);
 		};
 	}, [filePath, handleChange]);
 }

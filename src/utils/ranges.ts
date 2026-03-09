@@ -38,54 +38,74 @@ export function normalizePos(
 
 // ---- 区间计算 ----
 
-/** 计算某行上的批注高亮区间（合并重叠） */
-export function getAnnotationRangesForLine(
+/** 带批注索引的区间，用于交替配色 */
+export interface AnnotatedRange {
+	start: number;
+	end: number;
+	index: number;
+}
+
+/** 计算某行上的未 resolved 批注区间（保留批注身份，不合并） */
+export function getAnnotatedRangesForLine(
 	annotations: Annotation[],
 	lineNum: number,
 	lineLength: number,
-): Array<[number, number]> {
-	const ranges: Array<[number, number]> = [];
+): AnnotatedRange[] {
+	const ranges: AnnotatedRange[] = [];
+	for (let i = 0; i < annotations.length; i++) {
+		const ann = annotations[i]!;
+		if (ann.resolved) continue;
+		const range = annotationRangeForLine(ann, lineNum, lineLength);
+		if (range) ranges.push({ start: range[0], end: range[1], index: i });
+	}
+	return ranges;
+}
 
-	for (const ann of annotations) {
-		if (lineNum < ann.startLine || lineNum > ann.endLine) continue;
+/** 计算某行上的 resolved 批注区间（保留批注身份，不合并） */
+export function getResolvedRangesForLine(
+	annotations: Annotation[],
+	lineNum: number,
+	lineLength: number,
+): AnnotatedRange[] {
+	const ranges: AnnotatedRange[] = [];
+	for (let i = 0; i < annotations.length; i++) {
+		const ann = annotations[i]!;
+		if (!ann.resolved) continue;
+		const range = annotationRangeForLine(ann, lineNum, lineLength);
+		if (range) ranges.push({ start: range[0], end: range[1], index: i });
+	}
+	return ranges;
+}
 
-		let start: number;
-		let end: number;
+/** 计算单个批注在某行上的区间 */
+function annotationRangeForLine(
+	ann: Annotation,
+	lineNum: number,
+	lineLength: number,
+): [number, number] | null {
+	if (lineNum < ann.startLine || lineNum > ann.endLine) return null;
 
-		const hasCol = ann.startCol !== undefined && ann.endCol !== undefined;
+	let start: number;
+	let end: number;
+	const hasCol = ann.startCol !== undefined && ann.endCol !== undefined;
 
-		if (ann.startLine === ann.endLine) {
-			start = hasCol ? ann.startCol! : 0;
-			end = hasCol ? ann.endCol! : lineLength;
-		} else if (lineNum === ann.startLine) {
-			start = hasCol ? ann.startCol! : 0;
-			end = lineLength;
-		} else if (lineNum === ann.endLine) {
-			start = 0;
-			end = hasCol ? ann.endCol! : lineLength;
-		} else {
-			start = 0;
-			end = lineLength;
-		}
-
-		ranges.push([Math.max(0, start), Math.min(end, lineLength)]);
+	if (ann.startLine === ann.endLine) {
+		start = hasCol ? ann.startCol! : 0;
+		end = hasCol ? ann.endCol! : lineLength;
+	} else if (lineNum === ann.startLine) {
+		start = hasCol ? ann.startCol! : 0;
+		end = lineLength;
+	} else if (lineNum === ann.endLine) {
+		start = 0;
+		end = hasCol ? ann.endCol! : lineLength;
+	} else {
+		start = 0;
+		end = lineLength;
 	}
 
-	if (ranges.length === 0) return [];
-
-	// 合并重叠区间
-	ranges.sort((a, b) => a[0] - b[0]);
-	const merged: Array<[number, number]> = [ranges[0]!];
-	for (let i = 1; i < ranges.length; i++) {
-		const last = merged[merged.length - 1]!;
-		const cur = ranges[i]!;
-		if (cur[0] <= last[1]) {
-			last[1] = Math.max(last[1], cur[1]);
-		} else {
-			merged.push(cur);
-		}
-	}
-	return merged;
+	start = Math.max(0, start);
+	end = Math.min(end, lineLength);
+	return end > start ? [start, end] : null;
 }
 
 /** 计算某行在选择范围内的列区间 */
@@ -124,17 +144,26 @@ export function getSelectionRangeForLine(
 export interface Segment {
 	text: string;
 	selected: boolean;
-	annotated: boolean;
+	annotationIndex: number | null;
+	resolvedIndex: number | null;
 }
 
 /** 将一行文本按选择和批注区间切分为样式段 */
 export function buildSegments(
 	stripped: string,
 	selRange: [number, number] | null,
-	annRanges: Array<[number, number]>,
+	annRanges: AnnotatedRange[],
+	resolvedRanges: AnnotatedRange[] = [],
 ): Segment[] {
 	if (stripped.length === 0)
-		return [{ text: " ", selected: false, annotated: false }];
+		return [
+			{
+				text: " ",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+		];
 
 	const cuts = new Set<number>();
 	cuts.add(0);
@@ -144,9 +173,13 @@ export function buildSegments(
 		cuts.add(selRange[0]);
 		cuts.add(selRange[1]);
 	}
-	for (const [s, e] of annRanges) {
-		cuts.add(s);
-		cuts.add(e);
+	for (const r of annRanges) {
+		cuts.add(r.start);
+		cuts.add(r.end);
+	}
+	for (const r of resolvedRanges) {
+		cuts.add(r.start);
+		cuts.add(r.end);
 	}
 
 	const sortedCuts = [...cuts].sort((a, b) => a - b);
@@ -162,12 +195,26 @@ export function buildSegments(
 
 		const selected =
 			selRange !== null && mid >= selRange[0] && mid < selRange[1];
-		const annotated = annRanges.some(([s, e]) => mid >= s && mid < e);
 
-		segments.push({ text, selected, annotated });
+		const annHit = annRanges.find((r) => mid >= r.start && mid < r.end);
+		const resHit = resolvedRanges.find((r) => mid >= r.start && mid < r.end);
+
+		segments.push({
+			text,
+			selected,
+			annotationIndex: annHit ? annHit.index : null,
+			resolvedIndex: resHit ? resHit.index : null,
+		});
 	}
 
 	return segments.length > 0
 		? segments
-		: [{ text: " ", selected: false, annotated: false }];
+		: [
+				{
+					text: " ",
+					selected: false,
+					annotationIndex: null,
+					resolvedIndex: null,
+				},
+			];
 }

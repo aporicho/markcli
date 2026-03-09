@@ -33,14 +33,22 @@ type AddAnnotationHandler = (params: {
 }) => void;
 type UpdateAnnotationHandler = (id: string, comment: string) => void;
 type RemoveAnnotationHandler = (id: string) => void;
+type ResolveAnnotationHandler = (id: string) => void;
+type RefreshHandler = () => void;
+type ClearAnnotationsHandler = () => void;
+type JumpToAnnotationHandler = (id: string) => void;
 
 export class IpcServer {
 	private server: net.Server | null = null;
 	private state: TuiState;
 	private onOpenFile: OpenFileHandler | null = null;
+	private onRefresh: RefreshHandler | null = null;
 	private onAddAnnotation: AddAnnotationHandler | null = null;
 	private onUpdateAnnotation: UpdateAnnotationHandler | null = null;
 	private onRemoveAnnotation: RemoveAnnotationHandler | null = null;
+	private onResolveAnnotation: ResolveAnnotationHandler | null = null;
+	private onClearAnnotations: ClearAnnotationsHandler | null = null;
+	private onJumpToAnnotation: JumpToAnnotationHandler | null = null;
 
 	constructor(initialState: TuiState) {
 		this.state = initialState;
@@ -54,6 +62,10 @@ export class IpcServer {
 		this.onOpenFile = handler;
 	}
 
+	setRefreshHandler(handler: RefreshHandler): void {
+		this.onRefresh = handler;
+	}
+
 	setAddAnnotationHandler(handler: AddAnnotationHandler): void {
 		this.onAddAnnotation = handler;
 	}
@@ -64,6 +76,18 @@ export class IpcServer {
 
 	setRemoveAnnotationHandler(handler: RemoveAnnotationHandler): void {
 		this.onRemoveAnnotation = handler;
+	}
+
+	setResolveAnnotationHandler(handler: ResolveAnnotationHandler): void {
+		this.onResolveAnnotation = handler;
+	}
+
+	setClearAnnotationsHandler(handler: ClearAnnotationsHandler): void {
+		this.onClearAnnotations = handler;
+	}
+
+	setJumpToAnnotationHandler(handler: JumpToAnnotationHandler): void {
+		this.onJumpToAnnotation = handler;
 	}
 
 	start(): void {
@@ -105,7 +129,7 @@ export class IpcServer {
 
 	private handleRequest(req: IpcRequest): IpcResponse {
 		switch (req.type) {
-			case "get_annotations": {
+			case "list_annotations": {
 				return {
 					type: "annotations",
 					data: {
@@ -145,6 +169,13 @@ export class IpcServer {
 					return { type: "ok", message: `Opened ${req.path}` };
 				}
 				return { type: "error", message: "open_file handler not set" };
+			}
+			case "refresh_file": {
+				if (this.onRefresh) {
+					this.onRefresh();
+					return { type: "ok", message: "Refreshed" };
+				}
+				return { type: "error", message: "refresh_file handler not set" };
 			}
 			case "add_annotation": {
 				if (!this.onAddAnnotation) {
@@ -205,6 +236,31 @@ export class IpcServer {
 					return { type: "ok", message: `Annotation ${req.id} removed` };
 				}
 				return { type: "error", message: "remove_annotation handler not set" };
+			}
+			case "resolve_annotation": {
+				if (this.onResolveAnnotation) {
+					this.onResolveAnnotation(req.id);
+					return { type: "ok", message: `Annotation ${req.id} resolved` };
+				}
+				return { type: "error", message: "resolve_annotation handler not set" };
+			}
+			case "clear_annotations": {
+				if (this.onClearAnnotations) {
+					this.onClearAnnotations();
+					return { type: "ok", message: "All annotations cleared" };
+				}
+				return { type: "error", message: "clear_annotations handler not set" };
+			}
+			case "jump_to_annotation": {
+				const ann = this.state.annotations.find((a) => a.id === req.id);
+				if (!ann) {
+					return { type: "error", message: `Annotation ${req.id} not found` };
+				}
+				if (this.onJumpToAnnotation) {
+					this.onJumpToAnnotation(req.id);
+					return { type: "ok", message: `Jumped to annotation ${req.id}` };
+				}
+				return { type: "error", message: "jump_to_annotation handler not set" };
 			}
 		}
 	}

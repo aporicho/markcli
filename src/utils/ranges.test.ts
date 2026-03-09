@@ -3,7 +3,7 @@ import type { Annotation, SelectionPos } from "../types.js";
 import {
 	buildSegments,
 	displayWidth,
-	getAnnotationRangesForLine,
+	getAnnotatedRangesForLine,
 	getSelectionRangeForLine,
 	normalizePos,
 	stripAnsi,
@@ -109,16 +109,17 @@ describe("normalizePos", () => {
 	});
 });
 
-// ---- getAnnotationRangesForLine ----
+// ---- getAnnotatedRangesForLine ----
 
 function makeAnn(
 	startLine: number,
 	endLine: number,
 	startCol?: number,
 	endCol?: number,
+	opts?: { id?: string; resolved?: boolean },
 ): Annotation {
 	return {
-		id: "test",
+		id: opts?.id ?? "test",
 		startLine,
 		endLine,
 		startCol,
@@ -126,59 +127,73 @@ function makeAnn(
 		selectedText: "",
 		comment: "",
 		createdAt: "",
+		resolved: opts?.resolved,
 	};
 }
 
-describe("getAnnotationRangesForLine", () => {
+describe("getAnnotatedRangesForLine", () => {
 	it("returns empty for no annotations", () => {
-		expect(getAnnotationRangesForLine([], 1, 10)).toEqual([]);
+		expect(getAnnotatedRangesForLine([], 1, 10)).toEqual([]);
 	});
 
 	it("returns empty when line is outside annotation", () => {
-		expect(getAnnotationRangesForLine([makeAnn(2, 3)], 1, 10)).toEqual([]);
-		expect(getAnnotationRangesForLine([makeAnn(2, 3)], 4, 10)).toEqual([]);
+		expect(getAnnotatedRangesForLine([makeAnn(2, 3)], 1, 10)).toEqual([]);
+		expect(getAnnotatedRangesForLine([makeAnn(2, 3)], 4, 10)).toEqual([]);
 	});
 
 	it("single-line annotation without col covers full line", () => {
-		expect(getAnnotationRangesForLine([makeAnn(2, 2)], 2, 10)).toEqual([
-			[0, 10],
+		expect(getAnnotatedRangesForLine([makeAnn(2, 2)], 2, 10)).toEqual([
+			{ start: 0, end: 10, index: 0 },
 		]);
 	});
 
 	it("single-line annotation with col uses col range", () => {
-		expect(getAnnotationRangesForLine([makeAnn(2, 2, 3, 7)], 2, 10)).toEqual([
-			[3, 7],
+		expect(getAnnotatedRangesForLine([makeAnn(2, 2, 3, 7)], 2, 10)).toEqual([
+			{ start: 3, end: 7, index: 0 },
 		]);
 	});
 
 	it("multi-line annotation — start line", () => {
-		expect(getAnnotationRangesForLine([makeAnn(2, 5, 4, 8)], 2, 10)).toEqual([
-			[4, 10],
+		expect(getAnnotatedRangesForLine([makeAnn(2, 5, 4, 8)], 2, 10)).toEqual([
+			{ start: 4, end: 10, index: 0 },
 		]);
 	});
 
 	it("multi-line annotation — middle line covers full", () => {
-		expect(getAnnotationRangesForLine([makeAnn(2, 5, 4, 8)], 3, 10)).toEqual([
-			[0, 10],
+		expect(getAnnotatedRangesForLine([makeAnn(2, 5, 4, 8)], 3, 10)).toEqual([
+			{ start: 0, end: 10, index: 0 },
 		]);
 	});
 
 	it("multi-line annotation — end line", () => {
-		expect(getAnnotationRangesForLine([makeAnn(2, 5, 4, 8)], 5, 10)).toEqual([
-			[0, 8],
+		expect(getAnnotatedRangesForLine([makeAnn(2, 5, 4, 8)], 5, 10)).toEqual([
+			{ start: 0, end: 8, index: 0 },
 		]);
 	});
 
-	it("merges overlapping ranges", () => {
+	it("preserves overlapping ranges with separate indices", () => {
 		const anns = [makeAnn(1, 1, 0, 6), makeAnn(1, 1, 4, 10)];
-		expect(getAnnotationRangesForLine(anns, 1, 10)).toEqual([[0, 10]]);
+		expect(getAnnotatedRangesForLine(anns, 1, 10)).toEqual([
+			{ start: 0, end: 6, index: 0 },
+			{ start: 4, end: 10, index: 1 },
+		]);
 	});
 
-	it("keeps non-overlapping ranges separate", () => {
+	it("keeps non-overlapping ranges with separate indices", () => {
 		const anns = [makeAnn(1, 1, 0, 3), makeAnn(1, 1, 5, 8)];
-		expect(getAnnotationRangesForLine(anns, 1, 10)).toEqual([
-			[0, 3],
-			[5, 8],
+		expect(getAnnotatedRangesForLine(anns, 1, 10)).toEqual([
+			{ start: 0, end: 3, index: 0 },
+			{ start: 5, end: 8, index: 1 },
+		]);
+	});
+
+	it("skips resolved annotations", () => {
+		const anns = [
+			makeAnn(1, 1, 0, 5, { resolved: true }),
+			makeAnn(1, 1, 5, 10),
+		];
+		expect(getAnnotatedRangesForLine(anns, 1, 10)).toEqual([
+			{ start: 5, end: 10, index: 1 },
 		]);
 	});
 });
@@ -231,56 +246,180 @@ describe("getSelectionRangeForLine", () => {
 describe("buildSegments", () => {
 	it("returns a space segment for empty string", () => {
 		expect(buildSegments("", null, [])).toEqual([
-			{ text: " ", selected: false, annotated: false },
+			{
+				text: " ",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
 		]);
 	});
 
 	it("returns full text when no highlights", () => {
 		expect(buildSegments("hello", null, [])).toEqual([
-			{ text: "hello", selected: false, annotated: false },
+			{
+				text: "hello",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
 		]);
 	});
 
 	it("splits on selection range", () => {
 		const result = buildSegments("abcde", [1, 3], []);
 		expect(result).toEqual([
-			{ text: "a", selected: false, annotated: false },
-			{ text: "bc", selected: true, annotated: false },
-			{ text: "de", selected: false, annotated: false },
+			{
+				text: "a",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "bc",
+				selected: true,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "de",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
 		]);
 	});
 
 	it("splits on annotation range", () => {
-		const result = buildSegments("abcde", null, [[2, 4]]);
+		const result = buildSegments("abcde", null, [
+			{ start: 2, end: 4, index: 0 },
+		]);
 		expect(result).toEqual([
-			{ text: "ab", selected: false, annotated: false },
-			{ text: "cd", selected: false, annotated: true },
-			{ text: "e", selected: false, annotated: false },
+			{
+				text: "ab",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "cd",
+				selected: false,
+				annotationIndex: 0,
+				resolvedIndex: null,
+			},
+			{
+				text: "e",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
 		]);
 	});
 
 	it("handles overlapping selection and annotation", () => {
 		// text: "abcdef", sel: [1,4], ann: [3,6]
-		const result = buildSegments("abcdef", [1, 4], [[3, 6]]);
+		const result = buildSegments(
+			"abcdef",
+			[1, 4],
+			[{ start: 3, end: 6, index: 0 }],
+		);
 		expect(result).toEqual([
-			{ text: "a", selected: false, annotated: false },
-			{ text: "bc", selected: true, annotated: false },
-			{ text: "d", selected: true, annotated: true },
-			{ text: "ef", selected: false, annotated: true },
+			{
+				text: "a",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "bc",
+				selected: true,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "d",
+				selected: true,
+				annotationIndex: 0,
+				resolvedIndex: null,
+			},
+			{
+				text: "ef",
+				selected: false,
+				annotationIndex: 0,
+				resolvedIndex: null,
+			},
 		]);
 	});
 
-	it("handles multiple annotation ranges", () => {
+	it("handles multiple annotation ranges with different indices", () => {
 		const result = buildSegments("abcdefgh", null, [
-			[1, 3],
-			[5, 7],
+			{ start: 1, end: 3, index: 0 },
+			{ start: 5, end: 7, index: 1 },
 		]);
 		expect(result).toEqual([
-			{ text: "a", selected: false, annotated: false },
-			{ text: "bc", selected: false, annotated: true },
-			{ text: "de", selected: false, annotated: false },
-			{ text: "fg", selected: false, annotated: true },
-			{ text: "h", selected: false, annotated: false },
+			{
+				text: "a",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "bc",
+				selected: false,
+				annotationIndex: 0,
+				resolvedIndex: null,
+			},
+			{
+				text: "de",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
+			{
+				text: "fg",
+				selected: false,
+				annotationIndex: 1,
+				resolvedIndex: null,
+			},
+			{
+				text: "h",
+				selected: false,
+				annotationIndex: null,
+				resolvedIndex: null,
+			},
 		]);
+	});
+
+	it("alternating indices enable color differentiation", () => {
+		// 3 adjacent annotations → indices 0, 1, 2 → colors alternate by % 2
+		const result = buildSegments("abcdefghi", null, [
+			{ start: 0, end: 3, index: 0 },
+			{ start: 3, end: 6, index: 1 },
+			{ start: 6, end: 9, index: 2 },
+		]);
+		expect(result).toEqual([
+			{
+				text: "abc",
+				selected: false,
+				annotationIndex: 0,
+				resolvedIndex: null,
+			},
+			{
+				text: "def",
+				selected: false,
+				annotationIndex: 1,
+				resolvedIndex: null,
+			},
+			{
+				text: "ghi",
+				selected: false,
+				annotationIndex: 2,
+				resolvedIndex: null,
+			},
+		]);
+		// even indices (0, 2) → one color, odd (1) → another
+		expect(result[0]!.annotationIndex! % 2).toBe(0);
+		expect(result[1]!.annotationIndex! % 2).toBe(1);
+		expect(result[2]!.annotationIndex! % 2).toBe(0);
 	});
 });

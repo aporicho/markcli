@@ -3,6 +3,7 @@ import { IpcServer, type TuiState } from "../mcp/ipc-server.js";
 
 interface IpcHandlers {
 	onOpenFile: (filePath: string) => void;
+	onRefresh: () => void;
 	onAddAnnotation: (params: {
 		selectedText: string;
 		comment: string;
@@ -16,6 +17,9 @@ interface IpcHandlers {
 	}) => void;
 	onUpdateAnnotation: (id: string, comment: string) => void;
 	onRemoveAnnotation: (id: string) => void;
+	onResolveAnnotation: (id: string) => void;
+	onClearAnnotations: () => void;
+	onJumpToAnnotation: (id: string) => void;
 }
 
 /**
@@ -30,9 +34,13 @@ export function useIpcServer(state: TuiState, handlers: IpcHandlers): void {
 	useEffect(() => {
 		const server = new IpcServer(state);
 		server.setOpenFileHandler(handlers.onOpenFile);
+		server.setRefreshHandler(handlers.onRefresh);
 		server.setAddAnnotationHandler(handlers.onAddAnnotation);
 		server.setUpdateAnnotationHandler(handlers.onUpdateAnnotation);
 		server.setRemoveAnnotationHandler(handlers.onRemoveAnnotation);
+		server.setResolveAnnotationHandler(handlers.onResolveAnnotation);
+		server.setClearAnnotationsHandler(handlers.onClearAnnotations);
+		server.setJumpToAnnotationHandler(handlers.onJumpToAnnotation);
 		server.start();
 		serverRef.current = server;
 		return () => {
@@ -49,13 +57,23 @@ export function useIpcServer(state: TuiState, handlers: IpcHandlers): void {
 	// 同步 handlers
 	useEffect(() => {
 		serverRef.current?.setOpenFileHandler(handlers.onOpenFile);
+		serverRef.current?.setRefreshHandler(handlers.onRefresh);
 		serverRef.current?.setAddAnnotationHandler(handlers.onAddAnnotation);
 		serverRef.current?.setUpdateAnnotationHandler(handlers.onUpdateAnnotation);
 		serverRef.current?.setRemoveAnnotationHandler(handlers.onRemoveAnnotation);
+		serverRef.current?.setResolveAnnotationHandler(
+			handlers.onResolveAnnotation,
+		);
+		serverRef.current?.setClearAnnotationsHandler(handlers.onClearAnnotations);
+		serverRef.current?.setJumpToAnnotationHandler(handlers.onJumpToAnnotation);
 	}, [
 		handlers.onOpenFile,
+		handlers.onRefresh,
 		handlers.onAddAnnotation,
 		handlers.onUpdateAnnotation,
 		handlers.onRemoveAnnotation,
+		handlers.onResolveAnnotation,
+		handlers.onClearAnnotations,
+		handlers.onJumpToAnnotation,
 	]);
 }

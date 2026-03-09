@@ -10,12 +10,14 @@ import {
 	getSelectionRangeForLine,
 	stripAnsi,
 } from "../utils/ranges.js";
+import { getSelectedText } from "./LineSelector.js";
 
 export interface ViewerStatus {
 	scrollOffset: number;
 	selecting: boolean;
 	selStartLine?: number;
 	selEndLine?: number;
+	selectedText?: string;
 }
 
 interface MarkdownViewerProps {
@@ -162,14 +164,26 @@ export function MarkdownViewer({
 
 	// ---- 状态上报 ----
 	useEffect(() => {
+		let selectedText: string | undefined;
+		if (selection.selecting && selection.normStart && selection.normEnd) {
+			selectedText = getSelectedText(
+				lines.map((l) => stripAnsi(l)),
+				selection.normStart.line,
+				selection.normEnd.line,
+				selection.normStart.col,
+				selection.normEnd.col,
+			);
+		}
 		onStatusChange?.({
 			scrollOffset,
 			selecting: selection.selecting,
 			selStartLine: selection.normStart?.line,
 			selEndLine: selection.normEnd?.line,
+			selectedText,
 		});
 	}, [
 		scrollOffset,
+		lines,
 		selection.selecting,
 		selection.normStart,
 		selection.normEnd,

@@ -93,8 +93,15 @@ export function App({
 			mode,
 			annotations,
 			strippedLines,
+			selectedText: viewerStatus.selectedText,
 		}),
-		[currentFilePath, mode, annotations, strippedLines],
+		[
+			currentFilePath,
+			mode,
+			annotations,
+			strippedLines,
+			viewerStatus.selectedText,
+		],
 	);
 	useIpcServer(ipcState, {
 		onOpenFile: handleOpenFile,

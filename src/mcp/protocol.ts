@@ -10,6 +10,10 @@ export interface GetStatusRequest {
 	type: "get_status";
 }
 
+export interface GetSelectionRequest {
+	type: "get_selection";
+}
+
 export interface OpenFileRequest {
 	type: "open_file";
 	path: string;
@@ -36,6 +40,7 @@ export interface RemoveAnnotationRequest {
 export type IpcRequest =
 	| GetAnnotationsRequest
 	| GetStatusRequest
+	| GetSelectionRequest
 	| OpenFileRequest
 	| AddAnnotationRequest
 	| UpdateAnnotationRequest
@@ -65,6 +70,14 @@ export interface StatusResponse {
 	};
 }
 
+export interface SelectionResponse {
+	type: "selection";
+	data: {
+		file: string;
+		selectedText: string | null;
+	};
+}
+
 export interface OkResponse {
 	type: "ok";
 	message: string;
@@ -78,5 +91,6 @@ export interface ErrorResponse {
 export type IpcResponse =
 	| AnnotationsResponse
 	| StatusResponse
+	| SelectionResponse
 	| OkResponse
 	| ErrorResponse;

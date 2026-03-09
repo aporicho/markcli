@@ -16,6 +16,7 @@ export interface TuiState {
 	mode: string;
 	annotations: Annotation[];
 	strippedLines: string[];
+	selectedText?: string;
 }
 
 type OpenFileHandler = (filePath: string) => void;
@@ -126,6 +127,15 @@ export class IpcServer {
 						file: this.state.filePath,
 						mode: this.state.mode,
 						annotationCount: this.state.annotations.length,
+					},
+				};
+			}
+			case "get_selection": {
+				return {
+					type: "selection",
+					data: {
+						file: this.state.filePath,
+						selectedText: this.state.selectedText ?? null,
 					},
 				};
 			}

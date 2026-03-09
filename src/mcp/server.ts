@@ -140,6 +140,50 @@ export function createMcpServer(): McpServer {
 		},
 	);
 
+	// get_selection: 获取用户当前选中的文本
+	server.tool(
+		"get_selection",
+		"获取用户当前在 Mark 中选中的文本。",
+		{},
+		async () => {
+			const connected = await ipc.isConnected();
+			if (!connected) {
+				return {
+					content: [{ type: "text", text: "Mark is not running" }],
+				};
+			}
+
+			try {
+				const res = await ipc.send({ type: "get_selection" });
+				if (res.type === "selection") {
+					const { data } = res;
+					if (!data.selectedText) {
+						return {
+							content: [{ type: "text", text: "No text currently selected" }],
+						};
+					}
+					return {
+						content: [
+							{
+								type: "text",
+								text: `File: ${data.file}\n\nSelected text:\n> ${data.selectedText}`,
+							},
+						],
+					};
+				}
+				return {
+					content: [{ type: "text", text: "Unexpected response from Mark" }],
+					isError: true,
+				};
+			} catch {
+				return {
+					content: [{ type: "text", text: "Failed to connect to Mark" }],
+					isError: true,
+				};
+			}
+		},
+	);
+
 	// open_file: 让 Mark 打开指定文件
 	server.tool(
 		"open_file",

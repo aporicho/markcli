@@ -109,9 +109,7 @@ if (cli.flags.version) {
 if (cli.flags.completions !== undefined) {
 	const shell = cli.flags.completions || "zsh";
 	const completions: Record<string, string> = {
-		zsh: `#compdef mark
-
-_mark() {
+		zsh: `_mark() {
   local -a commands
   commands=(
     'open:打开文件进行阅读和批注'
@@ -136,7 +134,7 @@ _mark() {
   esac
 }
 
-_mark "$@"
+compdef _mark mark
 `,
 		bash: `_mark() {
   local cur prev commands

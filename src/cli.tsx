@@ -130,7 +130,7 @@ _mark() {
   case "$state" in
     first)
       _alternative \\
-        'commands:命令:((${commands}))' \\
+        'commands:命令:((\${commands}))' \\
         'files:Markdown 文件:_files -g "*.md(-.)"'
       ;;
   esac

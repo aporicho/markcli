@@ -108,10 +108,80 @@ if (cli.flags.version) {
 // --completions <shell>
 if (cli.flags.completions !== undefined) {
 	const shell = cli.flags.completions || "zsh";
-	const completionsDir = path.resolve(__dirname, "..", "completions");
-	const file = path.join(completionsDir, `mark.${shell}`);
-	if (fs.existsSync(file)) {
-		console.log(fs.readFileSync(file, "utf-8"));
+	const completions: Record<string, string> = {
+		zsh: `#compdef mark
+
+_mark() {
+  local -a commands
+  commands=(
+    'open:打开文件进行阅读和批注'
+    'list:查看文件的所有批注（JSON 格式）'
+    'show:输出格式化的批注摘要'
+    'clear:清除所有批注'
+  )
+
+  _arguments -C \\
+    '(-V --version)'{-V,--version}'[显示版本号]' \\
+    '--completions[输出 shell 补全脚本]:shell:(zsh bash fish)' \\
+    '1:命令或文件:->first' \\
+    '2:Markdown 文件:_files -g "*.md(-.)"' \\
+    && return
+
+  case "$state" in
+    first)
+      _alternative \\
+        'commands:命令:((${commands}))' \\
+        'files:Markdown 文件:_files -g "*.md(-.)"'
+      ;;
+  esac
+}
+
+_mark "$@"
+`,
+		bash: `_mark() {
+  local cur prev commands
+  COMPREPLY=()
+  cur="\${COMP_WORDS[COMP_CWORD]}"
+  prev="\${COMP_WORDS[COMP_CWORD-1]}"
+  commands="open list show clear"
+
+  case "$COMP_CWORD" in
+    1)
+      COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
+      COMPREPLY+=( $(compgen -f -X '!*.md' -- "$cur") )
+      compopt -o filenames 2>/dev/null
+      ;;
+    2)
+      COMPREPLY=( $(compgen -f -X '!*.md' -- "$cur") )
+      compopt -o filenames 2>/dev/null
+      ;;
+  esac
+}
+
+complete -F _mark mark
+`,
+		fish: `# 禁用默认文件补全，由我们自己控制
+complete -c mark -f
+
+# 子命令
+complete -c mark -n '__fish_use_subcommand' -a 'open'  -d '打开文件进行阅读和批注'
+complete -c mark -n '__fish_use_subcommand' -a 'list'  -d '查看文件的所有批注'
+complete -c mark -n '__fish_use_subcommand' -a 'show'  -d '输出格式化的批注摘要'
+complete -c mark -n '__fish_use_subcommand' -a 'clear' -d '清除所有批注'
+
+# 第一个参数也补全 .md 文件（支持 mark README.md 省略 open）
+complete -c mark -n '__fish_use_subcommand' -F -a '(__fish_complete_suffix .md)'
+
+# 子命令后补全 .md 文件
+complete -c mark -n '__fish_seen_subcommand_from open list show clear' -F -a '(__fish_complete_suffix .md)'
+
+# 选项
+complete -c mark -s V -l version -d '显示版本号'
+complete -c mark -l completions -xa 'zsh bash fish' -d '输出 shell 补全脚本'
+`,
+	};
+	if (shell in completions) {
+		process.stdout.write(completions[shell]);
 	} else {
 		console.error(`不支持的 shell: ${shell}（支持 zsh, bash, fish）`);
 		process.exit(1);

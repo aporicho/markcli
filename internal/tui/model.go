@@ -52,6 +52,20 @@ type overviewState struct {
 	Cursor int // 当前选中的批注索引
 }
 
+type fileEntry struct {
+	Name    string
+	Path    string // 绝对路径
+	Size    int64
+	ModTime time.Time
+	IsDir   bool
+}
+
+type browsingState struct {
+	Entries []fileEntry
+	Cursor  int
+	Dir     string // 当前目录绝对路径
+}
+
 // Model is the bubbletea model for the TUI.
 type Model struct {
 	file        fileState
@@ -60,6 +74,7 @@ type Model struct {
 	selection   selectionState
 	input       inputState
 	overview    overviewState
+	browsing    browsingState
 	editingID   string                   // 编辑现有批注时的 ID
 	annotations []annotation.Annotation // raw from .markcli.json
 	resolved    []annotation.Annotation // positions relocated by anchor
@@ -78,6 +93,17 @@ func New(filePath string, t theme.Theme, themeIndex int, ipcCh <-chan ipc.Reques
 	return Model{
 		file:       fileState{FilePath: filePath},
 		mode:       ui.ModeReading,
+		theme:      t,
+		themeIndex: themeIndex,
+		ipcCh:      ipcCh,
+	}
+}
+
+// NewBrowse returns a Model in browsing mode, starting from dir.
+func NewBrowse(dir string, t theme.Theme, themeIndex int, ipcCh <-chan ipc.Request) Model {
+	return Model{
+		mode:       ui.ModeBrowsing,
+		browsing:   browsingState{Dir: dir},
 		theme:      t,
 		themeIndex: themeIndex,
 		ipcCh:      ipcCh,

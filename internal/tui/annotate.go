@@ -160,6 +160,40 @@ func enterEditFromOverview(m Model) Model {
 	return m
 }
 
+// deleteAnnotationByID removes an annotation by its ID and persists.
+// Used by Ctrl+D in annotating (edit) mode.
+func deleteAnnotationByID(m Model, id string) (Model, tea.Cmd) {
+	newAnns := make([]annotation.Annotation, 0, len(m.annotations))
+	for _, ann := range m.annotations {
+		if ann.ID != id {
+			newAnns = append(newAnns, ann)
+		}
+	}
+	m.annotations = newAnns
+
+	af := annotation.AnnotationFile{
+		File:        filepath.Base(m.file.FilePath),
+		Annotations: m.annotations,
+	}
+	if err := annotation.Save(m.file.FilePath, af); err != nil {
+		return m, func() tea.Msg { return errMsg{err: fmt.Errorf("save failed: %w", err)} }
+	}
+
+	m.editingID = ""
+	m.input = inputState{}
+	m.selection = selectionState{}
+
+	if len(m.annotations) > 0 {
+		m.overview = overviewState{Cursor: clamp(m.overview.Cursor, 0, len(m.annotations)-1)}
+		m.mode = ui.ModeOverview
+	} else {
+		m.overview = overviewState{}
+		m.mode = ui.ModeReading
+	}
+
+	return m, loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC)
+}
+
 // getSelectedText extracts text from strippedLines between normalized start and end positions.
 func getSelectedText(strippedLines []string, start, end annotation.SelectionPos) string {
 	if len(strippedLines) == 0 {

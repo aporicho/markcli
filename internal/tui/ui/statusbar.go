@@ -18,8 +18,9 @@ func RenderStatusbar(
 	termWidth int,
 	t theme.Theme,
 	errText string,
+	isEditing bool,
 ) string {
-	modeLabel, modeBg, hints := modeInfo(mode, t)
+	modeLabel, modeBg, hints := modeInfo(mode, t, isEditing)
 
 	// Show error in statusbar if present
 	if errText != "" {
@@ -37,15 +38,19 @@ func RenderStatusbar(
 		return errStr + padStr
 	}
 
-	currentLine := scrollOffset + 1
-
 	modeStyle := lipgloss.NewStyle().
 		Background(lipgloss.Color(modeBg)).
 		Foreground(lipgloss.Color(t.StatusBar.ModeFg)).
 		Bold(true)
 	modeStr := modeStyle.Render(fmt.Sprintf(" %s ", modeLabel))
 
-	leftContent := fmt.Sprintf("  %d 批注  %d/%d 行 ", annotationCount, currentLine, totalLines)
+	var leftContent string
+	if mode == ModeBrowsing {
+		leftContent = fmt.Sprintf("  %d 项 ", totalLines)
+	} else {
+		currentLine := scrollOffset + 1
+		leftContent = fmt.Sprintf("  %d 批注  %d/%d 行 ", annotationCount, currentLine, totalLines)
+	}
 	leftStyle := lipgloss.NewStyle().
 		Background(lipgloss.Color(t.StatusBar.Bg)).
 		Foreground(lipgloss.Color(t.StatusBar.Fg))
@@ -68,14 +73,19 @@ func RenderStatusbar(
 	return modeStr + leftStr + midStr + rightStr
 }
 
-func modeInfo(mode AppMode, t theme.Theme) (label, bg, hints string) {
+func modeInfo(mode AppMode, t theme.Theme, isEditing bool) (label, bg, hints string) {
 	switch mode {
+	case ModeBrowsing:
+		return "浏览", t.StatusBar.ModeBrowsing, "↑↓:选择  →/Enter:打开  ←:上级  Esc:返回  q:退出  ^T:主题"
 	case ModeReading:
-		return "阅读", t.StatusBar.ModeReading, "↑↓:滚动  d:总览  q:退出  ^T:主题"
+		return "阅读", t.StatusBar.ModeReading, "↑↓:滚动  b:浏览  d:总览  q:退出  ^T:主题"
 	case ModeSelecting:
 		return "选择", t.StatusBar.ModeSelecting, "↑↓:扩选  Enter:批注  Esc:取消"
 	case ModeAnnotating:
-		return "批注", t.StatusBar.ModeAnnotating, "Enter:确认  Esc:取消"
+		if isEditing {
+			return "编辑", t.StatusBar.ModeAnnotating, "Enter:提交  ^J:换行  ^R:调整选区  ^D:删除  Esc:取消"
+		}
+		return "批注", t.StatusBar.ModeAnnotating, "Enter:提交  ^J:换行  ^R:调整选区  Esc:取消"
 	case ModeOverview:
 		return "概览", t.StatusBar.ModeOverview, "Enter:编辑  ⌫:删除  ↑↓:选择  Esc:返回  q:退出"
 	default:

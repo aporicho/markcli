@@ -9,7 +9,7 @@ import (
 	"github.com/aporicho/markcli/internal/theme"
 )
 
-// RenderInputPanel renders a floating input panel with border, title, and cursor.
+// RenderInputPanel renders a minimal floating input panel — just a bordered box with cursor.
 func RenderInputPanel(value string, cursorPos int, panelWidth int, t theme.Theme) string {
 	if panelWidth < 6 {
 		panelWidth = 6
@@ -27,34 +27,17 @@ func RenderInputPanel(value string, cursorPos int, panelWidth int, t theme.Theme
 		PaddingLeft(1).
 		PaddingRight(1)
 
-	titleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Panel.Accent)).
-		Background(lipgloss.Color(t.Panel.Bg)).
-		Bold(true)
-
-	title := titleStyle.Render("批注")
-
 	var content string
-	if value == "" {
-		placeholderStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(t.Panel.Border)).
-			Background(lipgloss.Color(t.Panel.Bg)).
-			Faint(true)
-		content = placeholderStyle.Render("输入批注…")
-	} else {
-		content = renderInputWithCursor(value, cursorPos, t)
-	}
-
-	// If value is empty, still show cursor
 	if value == "" {
 		cursorStyle := lipgloss.NewStyle().
 			Background(lipgloss.Color(t.Panel.Accent)).
 			Foreground(lipgloss.Color(t.Panel.Bg))
-		content = cursorStyle.Render(" ") + content
+		content = cursorStyle.Render(" ")
+	} else {
+		content = renderInputWithCursor(value, cursorPos, t)
 	}
 
-	body := title + "\n" + content
-	return borderStyle.Render(body)
+	return borderStyle.Render(content)
 }
 
 // renderInputWithCursor renders input text with a block cursor at cursorPos.

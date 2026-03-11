@@ -21,6 +21,11 @@ func handleKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return handleAnnotatingKey(m, msg)
 	}
 
+	// Browsing mode handles its own keys
+	if m.mode == ui.ModeBrowsing {
+		return handleBrowsingKey(m, msg)
+	}
+
 	// Overview mode has its own q behavior (return to reading, not quit)
 	if m.mode == ui.ModeOverview {
 		return handleOverviewKey(m, msg)
@@ -85,6 +90,8 @@ func handleReadingKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.overview = overviewState{}
 			m.mode = ui.ModeOverview
 		}
+	case "b":
+		return enterBrowsing(m)
 	}
 
 	return m, nil
@@ -119,7 +126,10 @@ func handleSelectingKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.viewport.ScrollOffset = clamp(m.viewport.ScrollOffset+half, 0, maxOffset)
 	case "enter", "a":
 		m.mode = ui.ModeAnnotating
-		m.input = inputState{}
+		// Keep existing input if re-selecting (Ctrl+R), otherwise clear
+		if len(m.input.Value) == 0 {
+			m.input = inputState{}
+		}
 	case "esc":
 		m.selection = selectionState{}
 		m.mode = ui.ModeReading
@@ -178,6 +188,16 @@ func handleAnnotatingKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Insert newline
 		m.input.Value = insertRune(m.input.Value, m.input.Cursor, '\n')
 		m.input.Cursor++
+
+	case "ctrl+r":
+		// Re-select: keep input, go back to selecting mode to adjust selection
+		m.mode = ui.ModeSelecting
+
+	case "ctrl+d":
+		// Delete current annotation (only in edit mode)
+		if m.editingID != "" {
+			return deleteAnnotationByID(m, m.editingID)
+		}
 
 	case "esc":
 		// If editing from overview, go back to overview; otherwise to reading

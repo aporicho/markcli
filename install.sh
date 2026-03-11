@@ -207,11 +207,6 @@ if ! echo "$PATH" | tr ':' '\n' | grep -q "^${INSTALL_DIR}$"; then
 fi
 printf "\r  ✅ 配置 PATH       \n"
 
-# 清理旧版补全命令（TS 版使用 --completions，Go 版使用 completion 子命令）
-if [ -f "$SHELL_CONFIG" ]; then
-  sed -i.bak '/mark --completions/d' "$SHELL_CONFIG" && rm -f "${SHELL_CONFIG}.bak"
-fi
-
 # Tab 补全
 COMPLETION_ADDED=false
 printf "  ⠋ 配置补全...\r"
@@ -242,7 +237,7 @@ printf "\r  ✅ 配置补全       \n"
 MCP_CONFIGURED=false
 MCP_SKIPPED=false
 if command -v claude &>/dev/null; then
-  (claude mcp remove mark 2>/dev/null; claude mcp add mark -- "$INSTALL_PATH" mcp) &>/dev/null &
+  claude mcp add mark -- "$INSTALL_PATH" mcp &>/dev/null &
   if spinner $! "配置 MCP..."; then
     MCP_CONFIGURED=true
   fi

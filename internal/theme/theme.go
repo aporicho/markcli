@@ -8,6 +8,7 @@ type PanelStyle struct{ Bg, Border, Accent string }
 
 // StatusBarStyle holds colors for the status bar.
 type StatusBarStyle struct {
+	ModeBrowsing   string
 	ModeReading    string
 	ModeSelecting  string
 	ModeOverview   string
@@ -39,6 +40,7 @@ var themes = map[string]Theme{
 		AnnotationResolved: Color{Fg: "#1a1b26", Bg: "#9ece6a"},
 		Panel:              PanelStyle{Bg: "#1a1b26", Border: "#7aa2f7", Accent: "#7dcfff"},
 		StatusBar: StatusBarStyle{
+			ModeBrowsing:   "#73daca",
 			ModeReading:    "#7aa2f7",
 			ModeSelecting:  "#ff9e64",
 			ModeOverview:   "#73daca",
@@ -58,6 +60,7 @@ var themes = map[string]Theme{
 		AnnotationResolved: Color{Fg: "#24283b", Bg: "#9ece6a"},
 		Panel:              PanelStyle{Bg: "#24283b", Border: "#7aa2f7", Accent: "#7dcfff"},
 		StatusBar: StatusBarStyle{
+			ModeBrowsing:   "#73daca",
 			ModeReading:    "#7aa2f7",
 			ModeSelecting:  "#ff9e64",
 			ModeOverview:   "#73daca",
@@ -77,6 +80,7 @@ var themes = map[string]Theme{
 		AnnotationResolved: Color{Fg: "#222436", Bg: "#c3e88d"},
 		Panel:              PanelStyle{Bg: "#222436", Border: "#82aaff", Accent: "#86e1fc"},
 		StatusBar: StatusBarStyle{
+			ModeBrowsing:   "#4fd6be",
 			ModeReading:    "#82aaff",
 			ModeSelecting:  "#ff966c",
 			ModeOverview:   "#4fd6be",
@@ -96,6 +100,7 @@ var themes = map[string]Theme{
 		AnnotationResolved: Color{Fg: "#e1e2e7", Bg: "#587539"},
 		Panel:              PanelStyle{Bg: "#e1e2e7", Border: "#2e7de9", Accent: "#007197"},
 		StatusBar: StatusBarStyle{
+			ModeBrowsing:   "#118c74",
 			ModeReading:    "#2e7de9",
 			ModeSelecting:  "#b15c00",
 			ModeOverview:   "#118c74",

@@ -14,10 +14,6 @@ func TestRenderInputPanel_EmptyValue(t *testing.T) {
 	if result == "" {
 		t.Fatal("expected non-empty panel")
 	}
-	// Should contain title
-	if !strings.Contains(result, "批注") {
-		t.Error("expected panel to contain title '批注'")
-	}
 }
 
 func TestRenderInputPanel_WithValue(t *testing.T) {
@@ -27,8 +23,8 @@ func TestRenderInputPanel_WithValue(t *testing.T) {
 	if result == "" {
 		t.Fatal("expected non-empty panel")
 	}
-	if !strings.Contains(result, "批注") {
-		t.Error("expected panel to contain title")
+	if !strings.Contains(result, "hello") {
+		t.Error("expected panel to contain input value")
 	}
 }
 

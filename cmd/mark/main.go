@@ -35,6 +35,9 @@ func main() {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return runBrowse(cmd)
+			}
 			if len(args) == 1 {
 				return runOpen(cmd, args)
 			}
@@ -98,7 +101,26 @@ func main() {
 		RunE:         runDoctor,
 	}
 
-	root.AddCommand(openCmd, listCmd, showCmd, clearCmd, mcpCmd, updateCmd, doctorCmd)
+	completionCmd := &cobra.Command{
+		Use:       "completion [bash|zsh|fish]",
+		Short:     "Generate shell completion script",
+		Args:      cobra.ExactArgs(1),
+		ValidArgs: []string{"bash", "zsh", "fish"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			switch args[0] {
+			case "bash":
+				return root.GenBashCompletion(os.Stdout)
+			case "zsh":
+				return root.GenZshCompletion(os.Stdout)
+			case "fish":
+				return root.GenFishCompletion(os.Stdout, true)
+			default:
+				return fmt.Errorf("不支持的 shell: %s（可选: bash, zsh, fish）", args[0])
+			}
+		},
+	}
+
+	root.AddCommand(openCmd, listCmd, showCmd, clearCmd, mcpCmd, updateCmd, doctorCmd, completionCmd)
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -133,6 +155,45 @@ func runOpen(cmd *cobra.Command, args []string) error {
 	}
 
 	m := tui.New(filePath, t, themeIdx, ipcCh)
+	p := tea.NewProgram(m,
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+	)
+	_, err = p.Run()
+	return err
+}
+
+func runBrowse(cmd *cobra.Command) error {
+	cfg := config.Load()
+
+	themeNames := theme.Names()
+	themeIdx := 0
+	for i, n := range themeNames {
+		if n == cfg.Theme {
+			themeIdx = i
+			break
+		}
+	}
+
+	t := theme.Get(cfg.Theme)
+
+	// Start IPC server
+	sock := ipc.SocketPath()
+	srv := ipc.NewServer(sock)
+	ipcCh, err := srv.Start()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: IPC server failed to start: %v\n", err)
+		ipcCh = nil
+	} else {
+		defer srv.Stop()
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	m := tui.NewBrowse(dir, t, themeIdx, ipcCh)
 	p := tea.NewProgram(m,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),

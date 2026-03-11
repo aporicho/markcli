@@ -72,6 +72,11 @@ func RenderViewer(
 		linesRendered++
 	}
 
+	// Reset ANSI state after content lines to prevent glamour's
+	// unclosed styles (e.g. code block background) from bleeding
+	// into padding lines and the statusbar, which causes flicker on scroll.
+	sb.WriteString("\x1b[0m")
+
 	// Pad remaining lines to fill viewport
 	for linesRendered < viewportHeight {
 		sb.WriteString("\n")

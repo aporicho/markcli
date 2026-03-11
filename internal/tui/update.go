@@ -14,6 +14,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.Height = msg.Height
 		m.viewport.ViewportHeight = msg.Height - 1
 		m.viewport.ScrollOffset = clampScroll(m.viewport.ScrollOffset, len(m.file.RenderedLines), m.viewport.ViewportHeight)
+		if m.mode == ui.ModeBrowsing {
+			m.loaded = true
+			return m, nil
+		}
 		if !m.loaded {
 			m.loaded = true
 			return m, loadFileCmd(m.file.FilePath, msg.Width, loadInitial)
@@ -80,6 +84,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			loadFileCmd(m.file.FilePath, m.viewport.Width, loadFileChange),
 			watchFileCmd(m.file.FilePath),
 		)
+
+	case filesScannedMsg:
+		m.browsing.Entries = msg.Entries
+		m.browsing.Dir = msg.Dir
+		if m.browsing.Cursor >= len(msg.Entries) {
+			m.browsing.Cursor = max(0, len(msg.Entries)-1)
+		}
+		return m, nil
 
 	case ipcRequestMsg:
 		return handleIpc(m, msg.req)

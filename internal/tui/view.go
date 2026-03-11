@@ -7,6 +7,37 @@ import (
 )
 
 func (m Model) View() string {
+	if m.mode == ui.ModeBrowsing {
+		entries := make([]ui.BrowserEntry, len(m.browsing.Entries))
+		for i, e := range m.browsing.Entries {
+			entries[i] = ui.BrowserEntry{
+				Name:    e.Name,
+				IsDir:   e.IsDir,
+				SizeStr: formatSize(e.Size),
+				DateStr: formatDate(e.ModTime),
+			}
+		}
+		browser := ui.RenderBrowser(
+			m.browsing.Dir,
+			entries,
+			m.browsing.Cursor,
+			m.viewport.Width,
+			m.viewport.ViewportHeight,
+			m.theme,
+		)
+		bar := ui.RenderStatusbar(
+			m.mode,
+			0,
+			len(m.browsing.Entries),
+			0,
+			m.viewport.Width,
+			m.theme,
+			m.errText,
+			false,
+		)
+		return browser + bar
+	}
+
 	var selRange *[4]int
 	if m.selection.Active {
 		s, e := ui.NormalizePos(m.selection.Start, m.selection.End)
@@ -56,6 +87,7 @@ func (m Model) View() string {
 		m.viewport.Width,
 		m.theme,
 		m.errText,
+		m.editingID != "",
 	)
 	return viewer + bar
 }
@@ -69,7 +101,7 @@ func calcInputPanelTop(m Model) int {
 	selStartRow := s.Line - 1 - m.viewport.ScrollOffset
 
 	inputLines := max(1, strings.Count(string(m.input.Value), "\n")+1)
-	panelHeight := 2 + 1 + inputLines // border(2) + title(1) + content lines
+	panelHeight := 2 + inputLines // border(2) + content lines
 
 	// Try below selection
 	if selEndRow+1+panelHeight <= m.viewport.ViewportHeight {

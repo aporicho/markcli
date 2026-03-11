@@ -19,7 +19,6 @@ jobs:
           go-version: "1.23"
 
       - name: Build all platform binaries
-        working-directory: go
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           LDFLAGS="-s -w -X main.version=${VERSION}"
@@ -38,4 +37,4 @@ jobs:
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: go/dist/*
+          files: dist/*

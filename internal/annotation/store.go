@@ -33,7 +33,29 @@ func Save(filePath string, af AnnotationFile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(annoPath, data, 0644)
+
+	// Atomic write: temp file → chmod → rename
+	dir := filepath.Dir(annoPath)
+	tmp, err := os.CreateTemp(dir, ".markcli-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := os.Chmod(tmpPath, 0600); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	return os.Rename(tmpPath, annoPath)
 }
 
 func Clear(filePath string) error {

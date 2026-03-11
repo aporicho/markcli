@@ -94,7 +94,7 @@ esac
 
 # 4. MCP 配置
 if command -v claude &>/dev/null; then
-  (claude mcp remove mark 2>/dev/null || true; claude mcp add mark -- "$INSTALL_PATH" mcp) &>/dev/null &
+  (claude mcp remove mark --scope user 2>/dev/null || true; claude mcp add --scope user mark -- "$INSTALL_PATH" mcp) &>/dev/null &
   spinner $! "配置 Claude Code MCP..."
 else
   echo "  ⚠️  未找到 claude 命令，跳过 MCP 配置"

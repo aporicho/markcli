@@ -237,7 +237,7 @@ printf "\r  ✅ 配置补全       \n"
 MCP_CONFIGURED=false
 MCP_SKIPPED=false
 if command -v claude &>/dev/null; then
-  claude mcp add mark -- "$INSTALL_PATH" mcp &>/dev/null &
+  claude mcp add --scope user mark -- "$INSTALL_PATH" mcp &>/dev/null &
   if spinner $! "配置 MCP..."; then
     MCP_CONFIGURED=true
   fi

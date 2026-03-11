@@ -94,7 +94,7 @@ func watchFileCmd(path string) tea.Cmd {
 				if !ok {
 					return nil
 				}
-				if filepath.Base(event.Name) == base && event.Op&fsnotify.Write != 0 {
+				if filepath.Base(event.Name) == base && event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
 					// Debounce: drain additional events for 100ms
 					timer := time.NewTimer(100 * time.Millisecond)
 				draining:

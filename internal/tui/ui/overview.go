@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 
 	"github.com/aporicho/markcli/internal/annotation"
 	"github.com/aporicho/markcli/internal/theme"
@@ -132,7 +133,7 @@ func RenderOverviewPanel(
 			lines = append(lines, dimStyle.Render(padOrTruncate(lineContent, innerWidth)))
 		} else {
 			// Badge in accent color, rest in normal
-			restPadded := padOrTruncate(rest, innerWidth-len([]rune(prefix))-len([]rune(badge)))
+			restPadded := padOrTruncate(rest, innerWidth-runewidth.StringWidth(prefix)-runewidth.StringWidth(badge))
 			lines = append(lines, normalStyle.Render(prefix)+accentStyle.Render(badge)+normalStyle.Render(restPadded))
 		}
 	}
@@ -152,11 +153,11 @@ func truncatePreview(s string, maxChars int) string {
 	return string(runes)
 }
 
-// padOrTruncate ensures s is exactly width display columns (using rune count as approximation).
+// padOrTruncate ensures s is exactly width display columns (CJK-aware).
 func padOrTruncate(s string, width int) string {
-	runes := []rune(s)
-	if len(runes) >= width {
-		return string(runes[:width])
+	sw := runewidth.StringWidth(s)
+	if sw >= width {
+		return runewidth.Truncate(s, width, "")
 	}
-	return s + strings.Repeat(" ", width-len(runes))
+	return s + strings.Repeat(" ", width-sw)
 }

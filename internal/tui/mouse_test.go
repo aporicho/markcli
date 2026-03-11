@@ -60,9 +60,14 @@ func TestIsDoubleClick(t *testing.T) {
 		t.Error("expected true for same-line within window")
 	}
 
-	// Same line, different col but still same line (should be true)
-	if !isDoubleClick(last, 1, 10) {
-		t.Error("expected true for same-line different col")
+	// Same line, col within ±2 (should be true)
+	if !isDoubleClick(last, 1, 7) {
+		t.Error("expected true for same-line col within ±2")
+	}
+
+	// Same line, col too far apart (should be false)
+	if isDoubleClick(last, 1, 10) {
+		t.Error("expected false for same-line col too far apart")
 	}
 
 	// Different line

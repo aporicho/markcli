@@ -158,12 +158,16 @@ func mouseToTextPos(m Model, x, y int) (lineNum, charIdx int) {
 }
 
 // isDoubleClick returns true if the current click is within 400ms of the last
-// click on the same line.
-func isDoubleClick(last *clickRecord, lineNum, _ int) bool {
+// click on the same line and within ±2 columns.
+func isDoubleClick(last *clickRecord, lineNum, col int) bool {
 	if last == nil {
 		return false
 	}
 	if last.Line != lineNum {
+		return false
+	}
+	diff := col - last.Col
+	if diff < -2 || diff > 2 {
 		return false
 	}
 	return time.Since(last.Time) <= doubleClickWindow

@@ -77,7 +77,7 @@ func modeInfo(mode AppMode, t theme.Theme) (label, bg, hints string) {
 	case ModeAnnotating:
 		return "批注", t.StatusBar.ModeAnnotating, "Enter:确认  Esc:取消"
 	case ModeOverview:
-		return "概览", t.StatusBar.ModeOverview, "Enter:编辑  ⌫:删除  ↑↓:选择  Esc:返回"
+		return "概览", t.StatusBar.ModeOverview, "Enter:编辑  ⌫:删除  ↑↓:选择  Esc:返回  q:退出"
 	default:
 		return "阅读", t.StatusBar.ModeReading, "↑↓:滚动  q:退出  ^T:主题"
 	}

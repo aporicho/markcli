@@ -157,9 +157,11 @@ func handleOverviewKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "backspace", "delete", "x":
 		return deleteAnnotation(m)
-	case "esc", "q":
+	case "esc":
 		m.overview = overviewState{}
 		m.mode = ui.ModeReading
+	case "q":
+		return m, tea.Quit
 	}
 	return m, nil
 }

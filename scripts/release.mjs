@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const PKG_PATH = path.join(ROOT, "package.json");
 
 function run(cmd) {
 	console.log(`$ ${cmd}`);
@@ -34,25 +32,25 @@ if (!arg) {
 	process.exit(1);
 }
 
-const pkg = JSON.parse(fs.readFileSync(PKG_PATH, "utf-8"));
-const oldVersion = pkg.version;
+// 从 git tag 获取当前版本（不再依赖 package.json）
+let oldVersion;
+try {
+	oldVersion = execSync("git describe --tags --abbrev=0", {
+		cwd: ROOT,
+		encoding: "utf-8",
+	})
+		.trim()
+		.replace(/^v/, "");
+} catch {
+	oldVersion = "0.0.0";
+}
+
 const newVersion = bump(oldVersion, arg);
 
 console.log(`\n📦 发布 v${oldVersion} → v${newVersion}\n`);
 
-// 1. 更新 package.json 版本号
-pkg.version = newVersion;
-fs.writeFileSync(PKG_PATH, `${JSON.stringify(pkg, null, 2)}\n`);
-
-// 2. commit
-run(`git add package.json`);
-run(`git commit -m "release: v${newVersion}"`);
-
-// 3. 打 tag
+// 打 tag + push（Go 版通过 ldflags 注入版本，无需更新文件）
 run(`git tag v${newVersion}`);
-
-// 4. push
-run(`git push origin main`);
 run(`git push origin v${newVersion}`);
 
 console.log(`\n✅ v${newVersion} 已发布！CI 正在构建二进制...`);

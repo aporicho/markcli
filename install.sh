@@ -207,26 +207,31 @@ if ! echo "$PATH" | tr ':' '\n' | grep -q "^${INSTALL_DIR}$"; then
 fi
 printf "\r  ✅ 配置 PATH       \n"
 
+# 清理旧版补全命令（TS 版使用 --completions，Go 版使用 completion 子命令）
+if [ -f "$SHELL_CONFIG" ]; then
+  sed -i.bak '/mark --completions/d' "$SHELL_CONFIG" && rm -f "${SHELL_CONFIG}.bak"
+fi
+
 # Tab 补全
 COMPLETION_ADDED=false
 printf "  ⠋ 配置补全...\r"
 case "$SHELL_NAME" in
   zsh)
     # shellcheck disable=SC2016
-    if ensure_line_in_config "$SHELL_CONFIG" 'eval "$(mark --completions zsh)"'; then
+    if ensure_line_in_config "$SHELL_CONFIG" 'eval "$(mark completion zsh)"'; then
       COMPLETION_ADDED=true
     fi
     ;;
   bash)
     # shellcheck disable=SC2016
-    if ensure_line_in_config "$SHELL_CONFIG" 'eval "$(mark --completions bash)"'; then
+    if ensure_line_in_config "$SHELL_CONFIG" 'eval "$(mark completion bash)"'; then
       COMPLETION_ADDED=true
     fi
     ;;
   fish)
     FISH_COMP_DIR="$HOME/.config/fish/completions"
     mkdir -p "$FISH_COMP_DIR"
-    if "$INSTALL_PATH" --completions fish > "$FISH_COMP_DIR/mark.fish" 2>/dev/null; then
+    if "$INSTALL_PATH" completion fish > "$FISH_COMP_DIR/mark.fish" 2>/dev/null; then
       COMPLETION_ADDED=true
     fi
     ;;

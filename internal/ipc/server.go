@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 )
 
 // SocketPath returns the default IPC socket path: /tmp/mark-{uid}.sock
@@ -127,7 +128,7 @@ func (s *Server) handleConn(conn net.Conn) {
 			return
 		}
 
-		// Wait for handler to reply
+		// Wait for handler to reply (5s timeout to prevent deadlock)
 		select {
 		case resp := <-req.Chan():
 			b, merr := json.Marshal(resp)
@@ -135,6 +136,9 @@ func (s *Server) handleConn(conn net.Conn) {
 				b = []byte(`{"type":"error","message":"marshal failed"}`)
 			}
 			b = append(b, '\n')
+			conn.Write(b)
+		case <-time.After(5 * time.Second):
+			b := []byte(`{"type":"error","message":"handler timeout"}` + "\n")
 			conn.Write(b)
 		case <-s.done:
 			return

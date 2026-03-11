@@ -124,9 +124,13 @@ func handleListAnnotations(c *ipc.Client) server.ToolHandlerFunc {
 
 		if c.IsConnected() {
 			resp, err := c.Send(map[string]any{"type": "list_annotations", "file": file})
-			if err == nil && resp.Type == "annotations" {
-				return mcp.NewToolResultText(string(resp.Data)), nil
+			if err == nil {
+				if resp.Type == "annotations" {
+					return mcp.NewToolResultText(string(resp.Data)), nil
+				}
+				return mcp.NewToolResultError(resp.Message), nil
 			}
+			// Connection error — fall through to offline mode
 		}
 
 		// Fallback: read .markcli.json directly

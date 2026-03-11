@@ -146,16 +146,26 @@ func ipcOpenFile(m Model, req ipc.Request) (Model, tea.Cmd) {
 		return m, waitIpcCmd(m.ipcCh)
 	}
 
-	// Resolve to absolute path
+	// Resolve to absolute path, follow symlinks
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("invalid path: %s", err)})
 		return m, waitIpcCmd(m.ipcCh)
 	}
+	absPath, err = filepath.EvalSymlinks(absPath)
+	if err != nil {
+		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("path not found: %s", err)})
+		return m, waitIpcCmd(m.ipcCh)
+	}
 
-	// Check file exists
-	if _, err := os.Stat(absPath); err != nil {
+	// Check file exists and is not a directory
+	info, err := os.Stat(absPath)
+	if err != nil {
 		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("file not found: %s", absPath)})
+		return m, waitIpcCmd(m.ipcCh)
+	}
+	if info.IsDir() {
+		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("path is a directory: %s", absPath)})
 		return m, waitIpcCmd(m.ipcCh)
 	}
 

@@ -57,6 +57,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			watchFileCmd(m.file.FilePath),
 		)
 
+	case ipcRequestMsg:
+		return handleIpc(m, msg.req)
+
 	}
 
 	return m, nil

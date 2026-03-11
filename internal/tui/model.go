@@ -69,12 +69,13 @@ type Model struct {
 }
 
 // New returns an initial Model. file/viewport are zero-valued until Init() fills them.
-func New(filePath string, t theme.Theme, themeIndex int) Model {
+func New(filePath string, t theme.Theme, themeIndex int, ipcCh <-chan ipc.Request) Model {
 	return Model{
 		file:       fileState{FilePath: filePath},
 		mode:       ui.ModeReading,
 		theme:      t,
 		themeIndex: themeIndex,
+		ipcCh:      ipcCh,
 	}
 }
 

@@ -490,6 +490,12 @@ func addAnnotationOffline(file, selectedText, comment string) (*mcp.CallToolResu
 // generateOfflineID returns a 6-char random hex ID.
 func generateOfflineID() string {
 	b := make([]byte, 3)
-	_, _ = rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback: use timestamp-based ID if crypto/rand fails
+		n := time.Now().UnixNano()
+		b[0] = byte(n >> 16)
+		b[1] = byte(n >> 8)
+		b[2] = byte(n)
+	}
 	return hex.EncodeToString(b)
 }

@@ -213,6 +213,12 @@ func getSelectedText(strippedLines []string, start, end annotation.SelectionPos)
 // generateID returns a 6-character random hex ID.
 func generateID() string {
 	b := make([]byte, 3)
-	_, _ = rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback: use timestamp-based ID if crypto/rand fails
+		n := time.Now().UnixNano()
+		b[0] = byte(n >> 16)
+		b[1] = byte(n >> 8)
+		b[2] = byte(n)
+	}
 	return hex.EncodeToString(b)
 }

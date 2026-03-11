@@ -15,12 +15,10 @@
 ## 目录结构
 
 ```
-go/
-├── cmd/
-│   ├── mark/main.go          # TUI 入口
-│   └── mark-mcp/main.go      # MCP server 入口
+cmd/
+│   └── mark/main.go          # CLI 入口（TUI + MCP + 子命令）
 │
-├── internal/
+internal/
 │   ├── tui/
 │   │   ├── model.go          # Model 定义（含子结构体）
 │   │   ├── init.go           # Init()：启动文件监听、IPC 读取 cmd
@@ -61,8 +59,8 @@ go/
 │   └── config/
 │       └── config.go         # 读取 ~/.config/markcli/config.json
 │
-├── go.mod
-└── go.sum
+go.mod
+go.sum
 ```
 
 ## Model 设计
@@ -87,7 +85,7 @@ type Model struct {
 
 ```
 cmd/mark      → tui → annotation, markdown, ansi, theme, config, ipc
-cmd/mark-mcp  → mcp → ipc, annotation
+cmd/mark (mcp)→ mcp → ipc, annotation
 ipc           → 标准库
 annotation    → 标准库
 ansi          → mattn/go-runewidth
@@ -190,9 +188,8 @@ startCol/endCol/resolved 用指针 + omitempty 处理旧数据缺字段的情况
 ## Phase 7：IPC + MCP server
 **目标**：MCP 工具链完整可用
 - `internal/tui/ipc.go` — waitIpcCmd() + 全部 IPC handler
-- `internal/mcp/server.go` — JSON-RPC stdio（10 个工具）
-- `cmd/mark-mcp/main.go`
-- list/show/clear 子命令（cmd/mark）
+- `internal/mcp/server.go` — JSON-RPC stdio（11 个工具）
+- `cmd/mark/main.go` — mcp 子命令 + list/show/clear/update/doctor 子命令
 
 **验收**：`claude mcp add mark-go -- mark-go mcp` 配置后，list_annotations/add_annotation 等工具可用
 

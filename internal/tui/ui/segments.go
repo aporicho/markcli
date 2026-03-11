@@ -133,6 +133,8 @@ func GetSelectionRangeForLine(lineNum, lineLength int, normStart, normEnd annota
 func BuildSegments(stripped string, selRange *[2]int, annRanges, resolvedRanges []AnnotatedRange) []Segment {
 	runes := []rune(stripped)
 	if len(runes) == 0 {
+		// Return a single space so the UI always has content to render
+		// (prevents line height collapse for empty lines).
 		return []Segment{{Text: " "}}
 	}
 
@@ -199,6 +201,7 @@ func BuildSegments(stripped string, selRange *[2]int, annRanges, resolvedRanges 
 	}
 
 	if len(segments) == 0 {
+		// Same as above: ensure at least one renderable segment.
 		return []Segment{{Text: " "}}
 	}
 	return segments

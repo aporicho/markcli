@@ -20,10 +20,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		m.errText = ""
 		return handleKey(m, msg)
 
 	case tea.MouseMsg:
+		m.errText = ""
 		return handleMouse(m, msg)
+
+	case errMsg:
+		m.errText = msg.err.Error()
+		return m, nil
 
 	case fileLoadedMsg:
 		m.file.RenderedLines = msg.renderedLines

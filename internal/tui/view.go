@@ -55,6 +55,7 @@ func (m Model) View() string {
 		len(m.annotations),
 		m.viewport.Width,
 		m.theme,
+		m.errText,
 	)
 	return viewer + bar
 }

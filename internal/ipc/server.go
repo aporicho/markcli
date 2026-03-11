@@ -98,7 +98,10 @@ func (s *Server) handleConn(conn net.Conn) {
 		var raw rawRequest
 		if err := json.Unmarshal(line, &raw); err != nil {
 			errResp := Response{Type: "error", Message: fmt.Sprintf("invalid JSON: %s", err)}
-			b, _ := json.Marshal(errResp)
+			b, merr := json.Marshal(errResp)
+			if merr != nil {
+				b = []byte(`{"type":"error","message":"marshal failed"}`)
+			}
 			b = append(b, '\n')
 			conn.Write(b)
 			continue
@@ -106,7 +109,10 @@ func (s *Server) handleConn(conn net.Conn) {
 
 		if raw.Type == "" {
 			errResp := Response{Type: "error", Message: "missing \"type\" field"}
-			b, _ := json.Marshal(errResp)
+			b, merr := json.Marshal(errResp)
+			if merr != nil {
+				b = []byte(`{"type":"error","message":"marshal failed"}`)
+			}
 			b = append(b, '\n')
 			conn.Write(b)
 			continue
@@ -124,7 +130,10 @@ func (s *Server) handleConn(conn net.Conn) {
 		// Wait for handler to reply
 		select {
 		case resp := <-req.Chan():
-			b, _ := json.Marshal(resp)
+			b, merr := json.Marshal(resp)
+			if merr != nil {
+				b = []byte(`{"type":"error","message":"marshal failed"}`)
+			}
 			b = append(b, '\n')
 			conn.Write(b)
 		case <-s.done:

@@ -3,6 +3,7 @@ package tui
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -63,7 +64,9 @@ func submitAnnotation(m Model) (Model, tea.Cmd) {
 		File:        filepath.Base(m.file.FilePath),
 		Annotations: m.annotations,
 	}
-	_ = annotation.Save(m.file.FilePath, af)
+	if err := annotation.Save(m.file.FilePath, af); err != nil {
+		return m, func() tea.Msg { return errMsg{err: fmt.Errorf("save failed: %w", err)} }
+	}
 
 	m.input = inputState{}
 	m.selection = selectionState{}
@@ -97,7 +100,9 @@ func deleteAnnotation(m Model) (Model, tea.Cmd) {
 		File:        filepath.Base(m.file.FilePath),
 		Annotations: m.annotations,
 	}
-	_ = annotation.Save(m.file.FilePath, af)
+	if err := annotation.Save(m.file.FilePath, af); err != nil {
+		return m, func() tea.Msg { return errMsg{err: fmt.Errorf("save failed: %w", err)} }
+	}
 
 	// Adjust cursor
 	if m.overview.Cursor >= len(m.annotations) && m.overview.Cursor > 0 {

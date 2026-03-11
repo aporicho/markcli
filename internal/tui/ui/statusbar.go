@@ -17,8 +17,25 @@ func RenderStatusbar(
 	annotationCount int,
 	termWidth int,
 	t theme.Theme,
+	errText string,
 ) string {
 	modeLabel, modeBg, hints := modeInfo(mode, t)
+
+	// Show error in statusbar if present
+	if errText != "" {
+		errStyle := lipgloss.NewStyle().
+			Background(lipgloss.Color("#cc0000")).
+			Foreground(lipgloss.Color("#ffffff")).
+			Bold(true)
+		errContent := fmt.Sprintf(" ✗ %s ", errText)
+		errStr := errStyle.Render(errContent)
+		padWidth := termWidth - lipgloss.Width(errStr)
+		if padWidth < 0 {
+			padWidth = 0
+		}
+		padStr := errStyle.Render(strings.Repeat(" ", padWidth))
+		return errStr + padStr
+	}
 
 	currentLine := scrollOffset + 1
 

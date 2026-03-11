@@ -66,7 +66,11 @@ type Model struct {
 	theme       theme.Theme
 	themeIndex  int              // for Ctrl+T cycling
 	ipcCh       <-chan ipc.Request // nil = no IPC (Phase 7)
+	errText     string           // shown in statusbar, cleared on next key/mouse
 }
+
+// errMsg is a bubbletea message carrying an error to display in the statusbar.
+type errMsg struct{ err error }
 
 // New returns an initial Model. file/viewport are zero-valued until Init() fills them.
 func New(filePath string, t theme.Theme, themeIndex int, ipcCh <-chan ipc.Request) Model {

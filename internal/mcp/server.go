@@ -135,7 +135,10 @@ func handleListAnnotations(c *ipc.Client) server.ToolHandlerFunc {
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to load annotations: %s", err)), nil
 			}
-			data, _ := json.Marshal(af)
+			data, err := json.Marshal(af)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal annotations: %s", err)), nil
+			}
 			return mcp.NewToolResultText(string(data)), nil
 		}
 

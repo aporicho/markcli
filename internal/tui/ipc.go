@@ -72,11 +72,15 @@ func handleIpc(m Model, req ipc.Request) (Model, tea.Cmd) {
 // --- Read-only handlers ---
 
 func ipcGetStatus(m Model, req ipc.Request) (Model, tea.Cmd) {
-	data, _ := json.Marshal(map[string]any{
+	data, err := json.Marshal(map[string]any{
 		"file":            filepath.Base(m.file.FilePath),
 		"mode":            string(m.mode),
 		"annotationCount": len(m.annotations),
 	})
+	if err != nil {
+		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("marshal failed: %s", err)})
+		return m, waitIpcCmd(m.ipcCh)
+	}
 	req.Reply(ipc.Response{Type: "status", Data: data})
 	return m, waitIpcCmd(m.ipcCh)
 }
@@ -90,19 +94,27 @@ func ipcGetSelection(m Model, req ipc.Request) (Model, tea.Cmd) {
 			selectedText = &text
 		}
 	}
-	data, _ := json.Marshal(map[string]any{
+	data, err := json.Marshal(map[string]any{
 		"file":         filepath.Base(m.file.FilePath),
 		"selectedText": selectedText,
 	})
+	if err != nil {
+		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("marshal failed: %s", err)})
+		return m, waitIpcCmd(m.ipcCh)
+	}
 	req.Reply(ipc.Response{Type: "selection", Data: data})
 	return m, waitIpcCmd(m.ipcCh)
 }
 
 func ipcListAnnotations(m Model, req ipc.Request) (Model, tea.Cmd) {
-	data, _ := json.Marshal(map[string]any{
+	data, err := json.Marshal(map[string]any{
 		"file":        filepath.Base(m.file.FilePath),
 		"annotations": m.resolved,
 	})
+	if err != nil {
+		req.Reply(ipc.Response{Type: "error", Message: fmt.Sprintf("marshal failed: %s", err)})
+		return m, waitIpcCmd(m.ipcCh)
+	}
 	req.Reply(ipc.Response{Type: "annotations", Data: data})
 	return m, waitIpcCmd(m.ipcCh)
 }

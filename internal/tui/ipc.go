@@ -168,12 +168,12 @@ func ipcOpenFile(m Model, req ipc.Request) (Model, tea.Cmd) {
 	m.viewport.ScrollOffset = 0
 
 	req.Reply(ipc.Response{Type: "ok", Message: fmt.Sprintf("Opened %s", filepath.Base(absPath))})
-	return m, tea.Batch(loadFileCmd(absPath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(absPath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcRefreshFile(m Model, req ipc.Request) (Model, tea.Cmd) {
 	req.Reply(ipc.Response{Type: "ok", Message: "File refreshed"})
-	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcAddAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
@@ -247,7 +247,7 @@ func ipcAddAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
 	}
 
 	req.Reply(ipc.Response{Type: "ok", Message: "Annotation added"})
-	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcUpdateAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
@@ -287,7 +287,7 @@ func ipcUpdateAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
 	}
 
 	req.Reply(ipc.Response{Type: "ok", Message: fmt.Sprintf("Annotation %s updated", id)})
-	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcRemoveAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
@@ -324,7 +324,7 @@ func ipcRemoveAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
 	}
 
 	req.Reply(ipc.Response{Type: "ok", Message: fmt.Sprintf("Annotation %s removed", id)})
-	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcResolveAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
@@ -360,7 +360,7 @@ func ipcResolveAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {
 	}
 
 	req.Reply(ipc.Response{Type: "ok", Message: fmt.Sprintf("Annotation %s resolved", id)})
-	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcClearAnnotations(m Model, req ipc.Request) (Model, tea.Cmd) {
@@ -371,7 +371,7 @@ func ipcClearAnnotations(m Model, req ipc.Request) (Model, tea.Cmd) {
 	}
 
 	req.Reply(ipc.Response{Type: "ok", Message: "All annotations cleared"})
-	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width), waitIpcCmd(m.ipcCh))
+	return m, tea.Batch(loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC), waitIpcCmd(m.ipcCh))
 }
 
 func ipcJumpToAnnotation(m Model, req ipc.Request) (Model, tea.Cmd) {

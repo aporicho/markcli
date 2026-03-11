@@ -72,7 +72,7 @@ func submitAnnotation(m Model) (Model, tea.Cmd) {
 	m.selection = selectionState{}
 	m.mode = ui.ModeReading
 
-	return m, loadFileCmd(m.file.FilePath, m.viewport.Width)
+	return m, loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC)
 }
 
 // deleteAnnotation removes the annotation at overview.Cursor and persists.
@@ -115,7 +115,7 @@ func deleteAnnotation(m Model) (Model, tea.Cmd) {
 		m.overview = overviewState{}
 	}
 
-	return m, loadFileCmd(m.file.FilePath, m.viewport.Width)
+	return m, loadFileCmd(m.file.FilePath, m.viewport.Width, loadIPC)
 }
 
 // enterEditFromOverview sets up annotating mode to edit the annotation at overview cursor.

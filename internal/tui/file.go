@@ -3,6 +3,7 @@ package tui
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,28 +14,42 @@ import (
 	"github.com/aporicho/markcli/internal/markdown"
 )
 
+// loadSource identifies why the file was loaded.
+type loadSource int
+
+const (
+	loadInitial    loadSource = iota // first load after WindowSizeMsg
+	loadResize                       // terminal resize
+	loadFileChange                   // file changed on disk
+	loadIPC                          // IPC request (open_file, refresh, etc.)
+)
+
 // fileLoadedMsg is sent when file content has been loaded and rendered.
 type fileLoadedMsg struct {
 	renderedLines []string
 	strippedLines []string
 	lineLengths   []int
 	annotations   []annotation.Annotation
+	source        loadSource
 }
 
 // fileChangedMsg is sent when the watched file is modified on disk.
 type fileChangedMsg struct{ path string }
 
 // loadFileCmd reads the file, renders Markdown, strips ANSI, and loads annotations.
-func loadFileCmd(path string, width int) tea.Cmd {
+func loadFileCmd(path string, width int, src loadSource) tea.Cmd {
 	return func() tea.Msg {
 		content, err := os.ReadFile(path)
 		if err != nil {
-			return fileLoadedMsg{}
+			return fileLoadedMsg{source: src}
 		}
 
-		renderedLines, err := markdown.RenderToLines(string(content), width)
+		// Sanitize invalid UTF-8 sequences
+		text := strings.ToValidUTF8(string(content), "\uFFFD")
+
+		renderedLines, err := markdown.RenderToLines(text, width)
 		if err != nil {
-			return fileLoadedMsg{}
+			return fileLoadedMsg{source: src}
 		}
 
 		strippedLines := make([]string, len(renderedLines))
@@ -52,6 +67,7 @@ func loadFileCmd(path string, width int) tea.Cmd {
 			strippedLines: strippedLines,
 			lineLengths:   lineLengths,
 			annotations:   af.Annotations,
+			source:        src,
 		}
 	}
 }

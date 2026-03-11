@@ -66,6 +66,7 @@ type Model struct {
 	theme       theme.Theme
 	themeIndex  int              // for Ctrl+T cycling
 	ipcCh       <-chan ipc.Request // nil = no IPC (Phase 7)
+	loaded      bool             // true after first WindowSizeMsg triggers file load
 	errText     string           // shown in statusbar, cleared on next key/mouse
 }
 

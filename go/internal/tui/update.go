@@ -1,6 +1,10 @@
 package tui
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/aporicho/markcli/internal/tui/ui"
+)
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -18,6 +22,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		return handleKey(m, msg)
 
+	case tea.MouseMsg:
+		return handleMouse(m, msg)
+
 	case fileLoadedMsg:
 		m.file.RenderedLines = msg.renderedLines
 		m.file.StrippedLines = msg.strippedLines
@@ -25,6 +32,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.annotations = msg.annotations
 		m.resolved = resolveAnnotations(m.file.StrippedLines, m.file.LineLengths, m.annotations)
 		m.viewport.ScrollOffset = clampScroll(m.viewport.ScrollOffset, len(m.file.RenderedLines), m.viewport.ViewportHeight)
+		// Reset selection, input, editingID — file content changed, old positions invalid
+		m.selection = selectionState{}
+		m.input = inputState{}
+		m.editingID = ""
+		if m.mode == ui.ModeOverview {
+			// Stay in overview, clamp cursor to new annotation count
+			if m.overview.Cursor >= len(m.resolved) && m.overview.Cursor > 0 {
+				m.overview.Cursor = len(m.resolved) - 1
+			}
+			if len(m.resolved) == 0 {
+				m.overview = overviewState{}
+				m.mode = ui.ModeReading
+			}
+		} else {
+			m.overview = overviewState{}
+			m.mode = ui.ModeReading
+		}
 		return m, nil
 
 	case fileChangedMsg:
@@ -32,6 +56,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			loadFileCmd(m.file.FilePath, m.viewport.Width),
 			watchFileCmd(m.file.FilePath),
 		)
+
 	}
 
 	return m, nil

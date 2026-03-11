@@ -54,13 +54,13 @@ func RenderStatusbar(
 func modeInfo(mode AppMode, t theme.Theme) (label, bg, hints string) {
 	switch mode {
 	case ModeReading:
-		return "阅读", t.StatusBar.ModeReading, "↑↓:滚动  q:退出  ^T:主题"
+		return "阅读", t.StatusBar.ModeReading, "↑↓:滚动  d:总览  q:退出  ^T:主题"
 	case ModeSelecting:
 		return "选择", t.StatusBar.ModeSelecting, "↑↓:扩选  Enter:批注  Esc:取消"
 	case ModeAnnotating:
 		return "批注", t.StatusBar.ModeAnnotating, "Enter:确认  Esc:取消"
 	case ModeOverview:
-		return "概览", t.StatusBar.ModeOverview, "↑↓:浏览  q:退出"
+		return "概览", t.StatusBar.ModeOverview, "Enter:编辑  ⌫:删除  ↑↓:选择  Esc:返回"
 	default:
 		return "阅读", t.StatusBar.ModeReading, "↑↓:滚动  q:退出  ^T:主题"
 	}

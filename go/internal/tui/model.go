@@ -2,6 +2,7 @@ package tui
 
 import (
 	"strings"
+	"time"
 
 	"github.com/aporicho/markcli/internal/annotation"
 	"github.com/aporicho/markcli/internal/ipc"
@@ -16,6 +17,25 @@ type fileState struct {
 	LineLengths   []int    // rune count per line
 }
 
+type clickPos struct {
+	Line int // 1-based
+	Col  int // 0-based
+}
+
+type clickRecord struct {
+	Time time.Time
+	Line int
+	Col  int
+}
+
+type selectionState struct {
+	Active       bool
+	Start        annotation.SelectionPos // anchor point
+	End          annotation.SelectionPos // moving endpoint
+	PendingClick *clickPos               // press not yet dragged
+	LastClick    *clickRecord            // double-click detection (400ms window)
+}
+
 type viewportState struct {
 	ScrollOffset   int
 	Width          int
@@ -23,11 +43,24 @@ type viewportState struct {
 	ViewportHeight int // Height - 1 (minus status bar)
 }
 
+type inputState struct {
+	Value  []rune // 输入内容
+	Cursor int    // 光标位置（rune 索引）
+}
+
+type overviewState struct {
+	Cursor int // 当前选中的批注索引
+}
+
 // Model is the bubbletea model for the TUI.
 type Model struct {
 	file        fileState
 	viewport    viewportState
 	mode        ui.AppMode
+	selection   selectionState
+	input       inputState
+	overview    overviewState
+	editingID   string                   // 编辑现有批注时的 ID
 	annotations []annotation.Annotation // raw from .markcli.json
 	resolved    []annotation.Annotation // positions relocated by anchor
 	theme       theme.Theme

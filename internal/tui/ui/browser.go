@@ -30,7 +30,7 @@ func RenderBrowser(
 
 	// Header: directory path
 	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Panel.Accent)).
+		Foreground(lipgloss.Color(t.PanelAccent())).
 		Bold(true)
 	header := headerStyle.Render(" \U000F094B " + dir)
 	sb.WriteString(header)
@@ -61,10 +61,10 @@ func RenderBrowser(
 
 	normalStyle := lipgloss.NewStyle()
 	cursorStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color(t.Panel.Accent)).
-		Foreground(lipgloss.Color(t.Panel.Bg))
+		Background(lipgloss.Color(t.PanelAccent())).
+		Foreground(lipgloss.Color(t.PanelBg()))
 	dimStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.StatusBar.DimBg)).
+		Foreground(lipgloss.Color(t.StatusHintFg())).
 		Faint(true)
 
 	// Calculate max name width for alignment
@@ -129,7 +129,7 @@ func RenderBrowser(
 	// If no entries, show empty message
 	if len(entries) == 0 {
 		emptyStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(t.StatusBar.DimBg)).
+			Foreground(lipgloss.Color(t.StatusHintFg())).
 			Faint(true)
 		sb.WriteString(emptyStyle.Render("   （无 .md 文件）"))
 		sb.WriteString("\n")

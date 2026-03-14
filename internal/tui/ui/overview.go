@@ -29,23 +29,23 @@ func RenderOverviewPanel(
 
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(t.Panel.Border)).
-		Background(lipgloss.Color(t.Panel.Bg)).
+		BorderForeground(lipgloss.Color(t.PanelBorder())).
+		Background(lipgloss.Color(t.PanelBg())).
 		Width(innerWidth).
 		PaddingLeft(1).
 		PaddingRight(1)
 
 	titleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Panel.Accent)).
-		Background(lipgloss.Color(t.Panel.Bg)).
+		Foreground(lipgloss.Color(t.PanelAccent())).
+		Background(lipgloss.Color(t.PanelBg())).
 		Bold(true)
 
 	title := titleStyle.Render("批注总览")
 
 	if len(annotations) == 0 {
 		dimStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(t.Panel.Border)).
-			Background(lipgloss.Color(t.Panel.Bg)).
+			Foreground(lipgloss.Color(t.PanelBorder())).
+			Background(lipgloss.Color(t.PanelBg())).
 			Faint(true)
 		body := title + "\n" + dimStyle.Render("暂无批注")
 		return borderStyle.Render(body)
@@ -76,20 +76,20 @@ func RenderOverviewPanel(
 	}
 
 	normalStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color(t.Panel.Bg))
+		Background(lipgloss.Color(t.PanelBg()))
 
 	accentStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Panel.Accent)).
-		Background(lipgloss.Color(t.Panel.Bg))
+		Foreground(lipgloss.Color(t.PanelAccent())).
+		Background(lipgloss.Color(t.PanelBg()))
 
 	dimStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Panel.Border)).
-		Background(lipgloss.Color(t.Panel.Bg)).
+		Foreground(lipgloss.Color(t.PanelBorder())).
+		Background(lipgloss.Color(t.PanelBg())).
 		Faint(true)
 
 	cursorStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color(t.Panel.Accent)).
-		Foreground(lipgloss.Color(t.Panel.Bg))
+		Background(lipgloss.Color(t.PanelAccent())).
+		Foreground(lipgloss.Color(t.PanelBg()))
 
 	var lines []string
 	for i := scrollOffset; i < visibleEnd; i++ {

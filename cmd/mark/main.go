@@ -14,10 +14,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/aporicho/markcli/internal/annotation"
-	"github.com/aporicho/markcli/internal/config"
 	"github.com/aporicho/markcli/internal/ipc"
 	mcpkg "github.com/aporicho/markcli/internal/mcp"
-	"github.com/aporicho/markcli/internal/theme"
 	"github.com/aporicho/markcli/internal/tui"
 )
 
@@ -130,18 +128,6 @@ func main() {
 
 func runOpen(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
-	cfg := config.Load()
-
-	themeNames := theme.Names()
-	themeIdx := 0
-	for i, n := range themeNames {
-		if n == cfg.Theme {
-			themeIdx = i
-			break
-		}
-	}
-
-	t := theme.Get(cfg.Theme)
 
 	// Start IPC server
 	sock := ipc.SocketPath()
@@ -154,29 +140,17 @@ func runOpen(cmd *cobra.Command, args []string) error {
 		defer srv.Stop()
 	}
 
-	m := tui.New(filePath, t, themeIdx, ipcCh)
+	m := tui.New(filePath, ipcCh)
 	p := tea.NewProgram(m,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)
 	_, err = p.Run()
+	tui.ResetPointer()
 	return err
 }
 
 func runBrowse(cmd *cobra.Command) error {
-	cfg := config.Load()
-
-	themeNames := theme.Names()
-	themeIdx := 0
-	for i, n := range themeNames {
-		if n == cfg.Theme {
-			themeIdx = i
-			break
-		}
-	}
-
-	t := theme.Get(cfg.Theme)
-
 	// Start IPC server
 	sock := ipc.SocketPath()
 	srv := ipc.NewServer(sock)
@@ -193,12 +167,13 @@ func runBrowse(cmd *cobra.Command) error {
 		return err
 	}
 
-	m := tui.NewBrowse(dir, t, themeIdx, ipcCh)
+	m := tui.NewBrowse(dir, ipcCh)
 	p := tea.NewProgram(m,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)
 	_, err = p.Run()
+	tui.ResetPointer()
 	return err
 }
 

@@ -8,7 +8,7 @@ import (
 )
 
 func TestRenderInputPanel_EmptyValue(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	result := RenderInputPanel("", 0, 40, th)
 
 	if result == "" {
@@ -17,7 +17,7 @@ func TestRenderInputPanel_EmptyValue(t *testing.T) {
 }
 
 func TestRenderInputPanel_WithValue(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	result := RenderInputPanel("hello", 5, 40, th)
 
 	if result == "" {
@@ -29,7 +29,7 @@ func TestRenderInputPanel_WithValue(t *testing.T) {
 }
 
 func TestRenderInputPanel_NarrowWidth(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	result := RenderInputPanel("test", 0, 4, th)
 
 	if result == "" {

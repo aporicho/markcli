@@ -9,7 +9,7 @@ import (
 )
 
 func TestRenderOverviewPanel_Empty(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	result := RenderOverviewPanel(nil, 0, 40, 10, th)
 
 	if result == "" {
@@ -24,7 +24,7 @@ func TestRenderOverviewPanel_Empty(t *testing.T) {
 }
 
 func TestRenderOverviewPanel_SingleAnnotation(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	anns := []annotation.Annotation{
 		{
 			ID:           "abc123",
@@ -55,7 +55,7 @@ func TestRenderOverviewPanel_SingleAnnotation(t *testing.T) {
 }
 
 func TestRenderOverviewPanel_MultiLineAnnotation(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	anns := []annotation.Annotation{
 		{
 			ID:           "abc123",
@@ -74,7 +74,7 @@ func TestRenderOverviewPanel_MultiLineAnnotation(t *testing.T) {
 }
 
 func TestRenderOverviewPanel_CursorHighlight(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	anns := []annotation.Annotation{
 		{ID: "a1", StartLine: 1, EndLine: 1, SelectedText: "first", Comment: "c1"},
 		{ID: "a2", StartLine: 2, EndLine: 2, SelectedText: "second", Comment: "c2"},
@@ -89,7 +89,7 @@ func TestRenderOverviewPanel_CursorHighlight(t *testing.T) {
 }
 
 func TestRenderOverviewPanel_ResolvedItem(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	resolved := true
 	anns := []annotation.Annotation{
 		{ID: "a1", StartLine: 1, EndLine: 1, SelectedText: "text", Comment: "c", Resolved: &resolved},
@@ -102,7 +102,7 @@ func TestRenderOverviewPanel_ResolvedItem(t *testing.T) {
 }
 
 func TestRenderOverviewPanel_LongListScrolls(t *testing.T) {
-	th := theme.Default()
+	th := theme.Theme{Dark: true}
 	anns := make([]annotation.Annotation, 20)
 	for i := range anns {
 		anns[i] = annotation.Annotation{

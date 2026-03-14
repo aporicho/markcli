@@ -27,34 +27,26 @@ func withTempHome(t *testing.T) string {
 func TestLoad_FileNotExist(t *testing.T) {
 	withTempHome(t)
 	cfg := Load()
-	if cfg.Theme != "" {
-		t.Errorf("expected empty theme, got %q", cfg.Theme)
-	}
+	_ = cfg // Config is now empty struct, just verify no panic
 }
 
 func TestLoad_ValidJSON(t *testing.T) {
 	home := withTempHome(t)
-	writeConfigFile(t, home, `{"theme":"tokyonight-moon"}`)
+	writeConfigFile(t, home, `{}`)
 	cfg := Load()
-	if cfg.Theme != "tokyonight-moon" {
-		t.Errorf("expected tokyonight-moon, got %q", cfg.Theme)
-	}
+	_ = cfg
 }
 
 func TestLoad_InvalidJSON(t *testing.T) {
 	home := withTempHome(t)
 	writeConfigFile(t, home, `{not valid json`)
 	cfg := Load()
-	if cfg.Theme != "" {
-		t.Errorf("expected empty theme on bad JSON, got %q", cfg.Theme)
-	}
+	_ = cfg // should not panic on invalid JSON
 }
 
 func TestLoad_EmptyObject(t *testing.T) {
 	home := withTempHome(t)
 	writeConfigFile(t, home, `{}`)
 	cfg := Load()
-	if cfg.Theme != "" {
-		t.Errorf("expected empty theme for empty object, got %q", cfg.Theme)
-	}
+	_ = cfg
 }

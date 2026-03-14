@@ -6,7 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/aporicho/markcli/internal/annotation"
-	"github.com/aporicho/markcli/internal/theme"
 	"github.com/aporicho/markcli/internal/tui/ui"
 )
 
@@ -33,11 +32,6 @@ func handleKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	// Global keys for non-annotating, non-overview modes
 	switch msg.String() {
-	case "ctrl+t":
-		names := theme.Names()
-		m.themeIndex = (m.themeIndex + 1) % len(names)
-		m.theme = theme.Get(names[m.themeIndex])
-		return m, nil
 	case "q":
 		return m, tea.Quit
 	}
@@ -142,11 +136,6 @@ func handleOverviewKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
 		return m, tea.Quit
-	case "ctrl+t":
-		names := theme.Names()
-		m.themeIndex = (m.themeIndex + 1) % len(names)
-		m.theme = theme.Get(names[m.themeIndex])
-		return m, nil
 	case "up", "k":
 		if m.overview.Cursor > 0 {
 			m.overview.Cursor--

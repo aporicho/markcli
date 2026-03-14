@@ -90,32 +90,23 @@ func colorSegment(seg Segment, t theme.Theme) string {
 	style := lipgloss.NewStyle()
 
 	if seg.Selected {
-		if t.Selection.Fg != "" {
-			style = style.Foreground(lipgloss.Color(t.Selection.Fg))
-		}
-		if t.Selection.Bg != "" {
-			style = style.Background(lipgloss.Color(t.Selection.Bg))
-		}
+		style = style.
+			Foreground(lipgloss.Color(t.SelectionFg())).
+			Background(lipgloss.Color(t.SelectionBg()))
 	} else if seg.AnnotationIndex != nil {
-		var c theme.Color
 		if *seg.AnnotationIndex%2 == 0 {
-			c = t.Annotation
+			style = style.
+				Foreground(lipgloss.Color(t.AnnotationFg())).
+				Background(lipgloss.Color(t.AnnotationBg()))
 		} else {
-			c = t.AnnotationAlt
-		}
-		if c.Fg != "" {
-			style = style.Foreground(lipgloss.Color(c.Fg))
-		}
-		if c.Bg != "" {
-			style = style.Background(lipgloss.Color(c.Bg))
+			style = style.
+				Foreground(lipgloss.Color(t.AnnotationAltFg())).
+				Background(lipgloss.Color(t.AnnotationAltBg()))
 		}
 	} else if seg.ResolvedIndex != nil {
-		if t.AnnotationResolved.Fg != "" {
-			style = style.Foreground(lipgloss.Color(t.AnnotationResolved.Fg))
-		}
-		if t.AnnotationResolved.Bg != "" {
-			style = style.Background(lipgloss.Color(t.AnnotationResolved.Bg))
-		}
+		style = style.
+			Foreground(lipgloss.Color(t.AnnotationResolvedFg())).
+			Background(lipgloss.Color(t.AnnotationResolvedBg()))
 	} else {
 		return seg.Text
 	}

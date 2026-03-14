@@ -7,9 +7,7 @@ import (
 )
 
 // Config holds user configuration.
-type Config struct {
-	Theme string `json:"theme,omitempty"`
-}
+type Config struct{}
 
 // Load reads ~/.config/markcli/config.json.
 // Returns Config{} (zero value) if the file doesn't exist or is invalid JSON.

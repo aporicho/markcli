@@ -4,89 +4,82 @@ import (
 	"testing"
 )
 
-func TestGet_KnownTheme(t *testing.T) {
-	th := Get("tokyonight-night")
-	if th.Name != "tokyonight-night" {
-		t.Errorf("expected tokyonight-night, got %q", th.Name)
-	}
-	if th.Selection.Bg != "#283457" {
-		t.Errorf("wrong selection bg: %q", th.Selection.Bg)
-	}
-	if th.Annotation.Fg != "#1a1b26" {
-		t.Errorf("wrong annotation fg: %q", th.Annotation.Fg)
-	}
-	if th.Panel.Border != "#7aa2f7" {
-		t.Errorf("wrong panel border: %q", th.Panel.Border)
-	}
-	if th.StatusBar.ModeReading != "#7aa2f7" {
-		t.Errorf("wrong status bar mode reading: %q", th.StatusBar.ModeReading)
+func TestDetect_ReturnsDarkOrLight(t *testing.T) {
+	th := Detect()
+	// Can't assert Dark value since it depends on terminal, just ensure no panic
+	_ = th.Dark
+}
+
+func TestTheme_DarkMode_ContrastFg(t *testing.T) {
+	th := Theme{Dark: true}
+	if th.contrastFg() != "0" {
+		t.Errorf("dark mode contrastFg should be \"0\", got %q", th.contrastFg())
 	}
 }
 
-func TestGet_UnknownFallsToDefault(t *testing.T) {
-	th := Get("unknown-theme")
-	def := Default()
-	if th.Name != def.Name {
-		t.Errorf("expected fallback to %q, got %q", def.Name, th.Name)
+func TestTheme_LightMode_ContrastFg(t *testing.T) {
+	th := Theme{Dark: false}
+	if th.contrastFg() != "15" {
+		t.Errorf("light mode contrastFg should be \"15\", got %q", th.contrastFg())
 	}
 }
 
-func TestGet_AllThemes(t *testing.T) {
-	expected := map[string]string{
-		"tokyonight-storm": "#2e3c64",
-		"tokyonight-moon":  "#2d3f76",
-		"tokyonight-day":   "#b6bfe2",
-	}
-	for name, selBg := range expected {
-		th := Get(name)
-		if th.Name != name {
-			t.Errorf("%s: wrong name %q", name, th.Name)
-		}
-		if th.Selection.Bg != selBg {
-			t.Errorf("%s: wrong selection bg %q, want %q", name, th.Selection.Bg, selBg)
-		}
-	}
-}
+func TestTheme_DarkMode_Methods(t *testing.T) {
+	th := Theme{Dark: true}
 
-func TestNames_ReturnsFour(t *testing.T) {
-	names := Names()
-	if len(names) != 4 {
-		t.Errorf("expected 4 names, got %d", len(names))
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"SelectionBg", th.SelectionBg(), "4"},
+		{"SelectionFg", th.SelectionFg(), "0"},
+		{"AnnotationBg", th.AnnotationBg(), "3"},
+		{"AnnotationFg", th.AnnotationFg(), "0"},
+		{"AnnotationAltBg", th.AnnotationAltBg(), "6"},
+		{"AnnotationAltFg", th.AnnotationAltFg(), "0"},
+		{"AnnotationResolvedBg", th.AnnotationResolvedBg(), "2"},
+		{"AnnotationResolvedFg", th.AnnotationResolvedFg(), "0"},
+		{"PanelBorder", th.PanelBorder(), "4"},
+		{"PanelAccent", th.PanelAccent(), "6"},
+		{"PanelBg", th.PanelBg(), "0"},
+		{"ModeBrowsingBg", th.ModeBrowsingBg(), "2"},
+		{"ModeReadingBg", th.ModeReadingBg(), "4"},
+		{"ModeSelectingBg", th.ModeSelectingBg(), "3"},
+		{"ModeAnnotatingBg", th.ModeAnnotatingBg(), "5"},
+		{"ModeOverviewBg", th.ModeOverviewBg(), "6"},
+		{"ModeFg", th.ModeFg(), "0"},
+		{"StatusFg", th.StatusFg(), "7"},
+		{"StatusBg", th.StatusBg(), "0"},
+		{"StatusHintFg", th.StatusHintFg(), "8"},
+		{"ErrorBg", th.ErrorBg(), "1"},
+		{"ErrorFg", th.ErrorFg(), "15"},
 	}
-	seen := map[string]bool{}
-	for _, n := range names {
-		seen[n] = true
-	}
-	for _, want := range []string{"tokyonight-night", "tokyonight-storm", "tokyonight-moon", "tokyonight-day"} {
-		if !seen[want] {
-			t.Errorf("missing theme name %q", want)
+	for _, tt := range tests {
+		if tt.got != tt.want {
+			t.Errorf("%s: got %q, want %q", tt.name, tt.got, tt.want)
 		}
 	}
 }
 
-func TestDefault_IsNight(t *testing.T) {
-	def := Default()
-	if def.Name != "tokyonight-night" {
-		t.Errorf("expected tokyonight-night, got %q", def.Name)
-	}
-}
+func TestTheme_LightMode_Methods(t *testing.T) {
+	th := Theme{Dark: false}
 
-func TestNames_ConsistentWithThemesMap(t *testing.T) {
-	names := Names()
-	// every name in Names() must exist in themes map
-	for _, n := range names {
-		if _, ok := themes[n]; !ok {
-			t.Errorf("Names() contains %q but it's missing from themes map", n)
-		}
+	// Light mode differs in contrastFg and PanelBg/StatusBg
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"SelectionFg", th.SelectionFg(), "15"},
+		{"AnnotationFg", th.AnnotationFg(), "15"},
+		{"PanelBg", th.PanelBg(), "15"},
+		{"ModeFg", th.ModeFg(), "15"},
+		{"StatusBg", th.StatusBg(), "15"},
 	}
-	// every key in themes map must be in Names()
-	nameSet := map[string]bool{}
-	for _, n := range names {
-		nameSet[n] = true
-	}
-	for k := range themes {
-		if !nameSet[k] {
-			t.Errorf("themes map has %q but it's missing from Names()", k)
+	for _, tt := range tests {
+		if tt.got != tt.want {
+			t.Errorf("%s: got %q, want %q", tt.name, tt.got, tt.want)
 		}
 	}
 }

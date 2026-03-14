@@ -79,7 +79,6 @@ type Model struct {
 	annotations []annotation.Annotation // raw from .markcli.json
 	resolved    []annotation.Annotation // positions relocated by anchor
 	theme       theme.Theme
-	themeIndex  int              // for Ctrl+T cycling
 	ipcCh       <-chan ipc.Request // nil = no IPC (Phase 7)
 	loaded      bool             // true after first WindowSizeMsg triggers file load
 	errText     string           // shown in statusbar, cleared on next key/mouse
@@ -89,24 +88,22 @@ type Model struct {
 type errMsg struct{ err error }
 
 // New returns an initial Model. file/viewport are zero-valued until Init() fills them.
-func New(filePath string, t theme.Theme, themeIndex int, ipcCh <-chan ipc.Request) Model {
+func New(filePath string, ipcCh <-chan ipc.Request) Model {
 	return Model{
-		file:       fileState{FilePath: filePath},
-		mode:       ui.ModeReading,
-		theme:      t,
-		themeIndex: themeIndex,
-		ipcCh:      ipcCh,
+		file:  fileState{FilePath: filePath},
+		mode:  ui.ModeReading,
+		theme: theme.Detect(),
+		ipcCh: ipcCh,
 	}
 }
 
 // NewBrowse returns a Model in browsing mode, starting from dir.
-func NewBrowse(dir string, t theme.Theme, themeIndex int, ipcCh <-chan ipc.Request) Model {
+func NewBrowse(dir string, ipcCh <-chan ipc.Request) Model {
 	return Model{
-		mode:       ui.ModeBrowsing,
-		browsing:   browsingState{Dir: dir},
-		theme:      t,
-		themeIndex: themeIndex,
-		ipcCh:      ipcCh,
+		mode:     ui.ModeBrowsing,
+		browsing: browsingState{Dir: dir},
+		theme:    theme.Detect(),
+		ipcCh:    ipcCh,
 	}
 }
 

@@ -21,8 +21,8 @@ func RenderInputPanel(value string, cursorPos int, panelWidth int, t theme.Theme
 
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(t.Panel.Border)).
-		Background(lipgloss.Color(t.Panel.Bg)).
+		BorderForeground(lipgloss.Color(t.PanelBorder())).
+		Background(lipgloss.Color(t.PanelBg())).
 		Width(innerWidth).
 		PaddingLeft(1).
 		PaddingRight(1)
@@ -30,8 +30,8 @@ func RenderInputPanel(value string, cursorPos int, panelWidth int, t theme.Theme
 	var content string
 	if value == "" {
 		cursorStyle := lipgloss.NewStyle().
-			Background(lipgloss.Color(t.Panel.Accent)).
-			Foreground(lipgloss.Color(t.Panel.Bg))
+			Background(lipgloss.Color(t.PanelAccent())).
+			Foreground(lipgloss.Color(t.PanelBg()))
 		content = cursorStyle.Render(" ")
 	} else {
 		content = renderInputWithCursor(value, cursorPos, t)
@@ -51,11 +51,11 @@ func renderInputWithCursor(value string, cursorPos int, t theme.Theme) string {
 	}
 
 	cursorStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color(t.Panel.Accent)).
-		Foreground(lipgloss.Color(t.Panel.Bg))
+		Background(lipgloss.Color(t.PanelAccent())).
+		Foreground(lipgloss.Color(t.PanelBg()))
 
 	textStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color(t.Panel.Bg))
+		Background(lipgloss.Color(t.PanelBg()))
 
 	var sb strings.Builder
 	for i, r := range runes {

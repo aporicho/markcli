@@ -9,7 +9,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/aporicho/markcli/internal/theme"
 	"github.com/aporicho/markcli/internal/tui/ui"
 )
 
@@ -70,12 +69,6 @@ func scanFilesCmd(dir string) tea.Cmd {
 // handleBrowsingKey handles keyboard input in browsing mode.
 func handleBrowsingKey(m Model, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "ctrl+t":
-		names := theme.Names()
-		m.themeIndex = (m.themeIndex + 1) % len(names)
-		m.theme = theme.Get(names[m.themeIndex])
-		return m, nil
-
 	case "esc":
 		if m.file.FilePath != "" {
 			m.mode = ui.ModeReading
